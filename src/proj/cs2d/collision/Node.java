@@ -1,5 +1,6 @@
 package proj.cs2d.collision;
 
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -70,6 +71,18 @@ public class Node {
 				children[1].getAllIn(rect, set);
 				children[2].getAllIn(rect, set);
 				children[3].getAllIn(rect, set);
+			}
+		}
+	}
+	
+	protected void getAllIn(Point p, HashSet<MapObject> set) {
+		if(this.rect.contains(p)) {
+			set.addAll(objects);
+			if(!isLeaf()) {
+				children[0].getAllIn(p, set);
+				children[1].getAllIn(p, set);
+				children[2].getAllIn(p, set);
+				children[3].getAllIn(p, set);
 			}
 		}
 	}

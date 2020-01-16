@@ -166,7 +166,7 @@ public class Game extends JFrame implements Runnable,KeyListener,MouseMotionList
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		player.shoot(e.getX(), e.getY());
+		player.shoot(map);
 	}
 
 	@Override

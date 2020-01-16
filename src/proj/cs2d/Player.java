@@ -3,6 +3,7 @@ package proj.cs2d;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.io.IOException;
@@ -129,9 +130,7 @@ public class Player {
 		} else {
 			positionY += (velocityY * delta);
 		}
-		
-		System.out.println(positionX + " " + positionY + " " + playerX + " " + playerY);
-		
+				
 		this.aabb.x = positionX;
 		this.aabb.y = positionY;
 	}
@@ -152,13 +151,19 @@ public class Player {
 	 * @param x mouse x position
 	 * @param y mouse y position
 	 */
-	public void shoot(int x, int y) {
-		System.out.println("Shoot: " + x + " " + y);
-		
-		hitX = x;
-		hitY = y;
-		
-		//TODO uceli neshto
+	public void shoot(Map map) {
+		Raycast raycast = new Raycast(playerX, playerY, rotation);
+		while(raycast.getLength() < 850) {
+			System.out.println(raycast.getLength());
+			Point p = raycast.progress();
+			MapObject obj = map.collide(p, this);
+			hitX = p.x;
+			hitY = p.y;
+			if(obj != null) {
+				System.out.println("HIT");
+				break;
+			}
+		}
 	}
 	
 	/**

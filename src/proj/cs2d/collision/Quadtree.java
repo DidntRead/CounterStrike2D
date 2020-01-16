@@ -1,5 +1,6 @@
 package proj.cs2d.collision;
 
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -30,6 +31,12 @@ public class Quadtree {
 	public HashSet<MapObject> getAllCollision(Rectangle rect) {
 		HashSet<MapObject> set = new HashSet<MapObject>(20);
 		root.getAllIn(rect, set);
+		return set;
+	}
+	
+	public HashSet<MapObject> getAllCollision(Point p) {
+		HashSet<MapObject> set = new HashSet<MapObject>(20);
+		root.getAllIn(p, set);
 		return set;
 	}
 }

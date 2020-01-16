@@ -2,6 +2,7 @@ package proj.cs2d;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.util.HashSet;
@@ -42,11 +43,9 @@ public class Map {
 	public boolean collide(Rectangle rect, Player player) {
 		rect.translate(player.getBounds().x, player.getBounds().y);
 		HashSet<MapObject> coll = tree.getAllCollision(rect);
-		System.out.println(rect.toString());
 		for(MapObject obj : coll) {
 			if(obj.isCollidable()) {
-				System.out.println(obj.getBounds().toString());
-				if(checkForCollision(obj, rect)) {
+				if(rect.intersects(obj.getBounds())) {
 					return true;
 				}
 			}
@@ -54,11 +53,17 @@ public class Map {
 		return false;
 	}
 	
-	private boolean checkForCollision(MapObject obj, Rectangle rect1) {
-		Rectangle rect2 = obj.getBounds();
-		return rect1.x < rect2.x + rect2.width && rect1.x + rect1.width > rect2.x && rect1.y < rect2.y + rect2.height && rect1.y + rect1.height > rect2.y;
+	public MapObject collide(Point p, Player player) {
+		p.translate(player.getBounds().x, player.getBounds().y);
+		HashSet<MapObject> coll = tree.getAllCollision(p);
+		for(MapObject obj : coll) {
+			if(obj.isCollidable()) {
+				if(obj.getBounds().contains(p)) return obj;
+			}
+		}
+		return null;
 	}
-	
+		
 	public int getSize() {
 		return this.size;
 	}
