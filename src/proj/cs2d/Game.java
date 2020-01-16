@@ -15,10 +15,11 @@ public class Game extends JFrame implements Runnable,KeyListener,MouseMotionList
 	public static final int PORT = 28852;
 	
 	private static Game game;
-	private static int width, height;
+	public static int width, height;
 	private JPanel contentPane;
 	private static boolean running = true;
-	Player player = new Player(300, 300);
+	Player player;
+	Map map;
 
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
@@ -82,6 +83,8 @@ public class Game extends JFrame implements Runnable,KeyListener,MouseMotionList
 		Timer timer = new Timer();
 		game.createBufferStrategy(2);
 		BufferStrategy bufferStrategy = game.getBufferStrategy();
+		map = new Map(1000, 1000, width, height);
+		player = new Player(300, 300);
 		while(running) {
 			float deltaTime = timer.elapsed();
 						
@@ -91,6 +94,8 @@ public class Game extends JFrame implements Runnable,KeyListener,MouseMotionList
 			g2d.clearRect(0, 0, width, height);
 			
 			player.render(g2d);
+			
+			map.render(g2d, player);
 			
 			g2d.setColor(Color.red);
 			g2d.setFont(g2d.getFont().deriveFont(Font.BOLD, 20f));

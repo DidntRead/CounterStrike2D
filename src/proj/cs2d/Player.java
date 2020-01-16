@@ -3,6 +3,7 @@ package proj.cs2d;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.io.IOException;
 
@@ -16,9 +17,11 @@ public class Player {
 	public int speed = RUN_SPEED;
 	private int velocityX,velocityY;
 	private int positionX,positionY;
+	private int playerX, playerY;
 	private int rotation = 45;
 	private int hitX = 0, hitY = 0;
 	private int health = 100;
+	private Rectangle aabb;
 	
 	/**
 	 * Create a new player
@@ -28,6 +31,8 @@ public class Player {
 	public Player(int positionX, int positionY) {
 		this.positionX = positionX;
 		this.positionY = positionY;
+		this.playerX = Game.width / 2;
+		this.playerY = Game.height / 2;
 		if(img == null) {
 			try {
 				img = ImageIO.read(Player.class.getResourceAsStream("/player.png"));
@@ -35,34 +40,35 @@ public class Player {
 				e.printStackTrace();
 			}
 		}
+		this.aabb = new Rectangle(positionX, positionY, 35, 29);
 	}
 	
 	/**
 	 * Move player left
 	 */
 	public void moveLeft() {
-		velocityX = -speed;
+		velocityX = speed;
 	}
 	
 	/**
 	 * Move player right
 	 */
 	public void moveRight() {
-		velocityX = speed;
+		velocityX = -speed;
 	}
 	
 	/**
 	 * Move player up
 	 */
 	public void moveUp() {
-		velocityY = -speed;
+		velocityY = speed;
 	}
 	
 	/**
 	 * Move player down
 	 */
 	public void moveDown() {
-		velocityY = speed;
+		velocityY = -speed;
 	}
 	
 	/**
@@ -77,6 +83,10 @@ public class Player {
 	 */
 	public void stopHorizontalMovement() {
 		velocityX = 0;
+	}
+	
+	public Rectangle getBounds() {
+		return this.aabb;
 	}
 	
 	/**
@@ -110,6 +120,8 @@ public class Player {
 	public void update(float delta) {
 		positionX += (velocityX * delta);
 		positionY += (velocityY * delta);
+		this.aabb.x = positionX;
+		this.aabb.y = positionY;
 	}
 	
 	/**
@@ -118,8 +130,8 @@ public class Player {
 	 * @param y mouse y position
 	 */
 	public void aim(int x, int y) {
-		double angle1 = Math.atan2(-positionY, -positionX);
-		double angle2 = Math.atan2(y - positionY, x - positionX);
+		double angle1 = Math.atan2(-playerY, -playerX);
+		double angle2 = Math.atan2(y - playerY, x - playerX);
 		rotation = (int) Math.toDegrees(angle2 - angle1);
 	}
 	
@@ -143,14 +155,15 @@ public class Player {
 	 */
 	public void render(Graphics2D g) {
 		AffineTransform transf = g.getTransform();
-		g.rotate(Math.toRadians(rotation), positionX, positionY);
-		g.drawImage(img, positionX - 17, positionY - 14, positionX + 18, positionY + 15, 0, 0, 35, 29, null);
+		g.rotate(Math.toRadians(rotation), playerX, playerY);
+		System.out.println(playerX + " " + playerY);
+		g.drawImage(img, playerX - 17,  playerY - 14,  playerX + 18,  playerY + 15, 0, 0, 35, 29, null);
 		g.setTransform(transf);
 		
 		// Shoot line
 		if(hitX != 0) {
 			g.setColor(Color.orange);
-			g.drawLine(positionX, positionY, hitX, hitY);
+			g.drawLine(playerX, playerY, hitX, hitY);
 			hitX = 0;
 		}
 	}
