@@ -5,6 +5,7 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
+import java.util.Random;
 
 public class Map {
 	private int sizeX, sizeY;
@@ -16,9 +17,11 @@ public class Map {
 		this.sizeY = sizeY;
 		this.quadtree = new Quadtree(new Rectangle(sizeX, sizeY));
 		this.renderWindow = new Rectangle(windowWidth, windowHeight);
-		
-		this.quadtree.insert(new MapObject(Color.green, new Rectangle(200, 200, 200, 200)));
-		this.quadtree.insert(new MapObject(Color.green, new Rectangle(100, 100, 100, 50)));
+				
+		Random random = new Random(1000011);
+		for(int i = 0; i < 5000; i++) {
+			this.quadtree.insert(new MapObject(new Color(random.nextInt(255), random.nextInt(255), random.nextInt(255)), new Rectangle(random.nextInt(5000), random.nextInt(5000), 50, 50)));
+		}
 	}
 
 	public void renderWindow(int width, int height) {
@@ -30,6 +33,7 @@ public class Map {
 		AffineTransform trans = g2d.getTransform();
 		g2d.translate(player.getBounds().x, player.getBounds().y);
 		objects = (ArrayList<MapObject>) quadtree.retrieve(objects, renderWindow);
+		System.out.println(objects.size() + " to render");
 		for(MapObject obj : objects) {
 			obj.render(g2d);
 		}
@@ -39,7 +43,7 @@ public class Map {
 	public void collide(Player player) {
 		ArrayList<MapObject> objects = new ArrayList<MapObject>();
 		objects = (ArrayList<MapObject>) quadtree.retrieve(objects, player.getBounds());
-		//TODO 
+		System.out.println(objects.size() + " to check");
 	}
 	
 	public int getWidth() {

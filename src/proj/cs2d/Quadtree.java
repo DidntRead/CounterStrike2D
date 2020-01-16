@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Quadtree {
-	private int MAX_OBJECTS = 10;
+	private int MAX_OBJECTS = 5000;
 	private int MAX_LEVELS = 10;
 	
 	private int level;
@@ -95,7 +95,7 @@ public class Quadtree {
 		 
 		   if (objects.size() > MAX_OBJECTS && level < MAX_LEVELS) {
 		      if (nodes[0] == null) { 
-		         split(); 
+		         split();
 		      }
 		 
 		     int i = 0;

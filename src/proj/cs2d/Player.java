@@ -156,7 +156,6 @@ public class Player {
 	public void render(Graphics2D g) {
 		AffineTransform transf = g.getTransform();
 		g.rotate(Math.toRadians(rotation), playerX, playerY);
-		System.out.println(playerX + " " + playerY);
 		g.drawImage(img, playerX - 17,  playerY - 14,  playerX + 18,  playerY + 15, 0, 0, 35, 29, null);
 		g.setTransform(transf);
 		

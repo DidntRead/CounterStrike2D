@@ -83,12 +83,14 @@ public class Game extends JFrame implements Runnable,KeyListener,MouseMotionList
 		Timer timer = new Timer();
 		game.createBufferStrategy(2);
 		BufferStrategy bufferStrategy = game.getBufferStrategy();
-		map = new Map(1000, 1000, width, height);
+		map = new Map(5000, 5000, width, height);
 		player = new Player(300, 300);
 		while(running) {
 			float deltaTime = timer.elapsed();
 						
 			player.update(deltaTime);
+			
+			map.collide(player);
 			
 			Graphics2D g2d = (Graphics2D) bufferStrategy.getDrawGraphics();
 			g2d.clearRect(0, 0, width, height);
