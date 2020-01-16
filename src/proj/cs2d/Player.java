@@ -117,9 +117,21 @@ public class Player {
 	 * Update player
 	 * @param delta time passed since last update
 	 */
-	public void update(float delta) {
-		positionX += (velocityX * delta);
-		positionY += (velocityY * delta);
+	public void update(float delta, Map map) {
+		if(map.collide(new Rectangle((int) (velocityX * delta) - 70, -58, 35, 29), this)) {
+			velocityX = 0;
+		} else {
+			positionX += (velocityX * delta);
+		}
+		
+		if(map.collide(new Rectangle(-70, (int) (velocityY * delta) -58, 35, 29), this)) {
+			velocityY = 0;
+		} else {
+			positionY += (velocityY * delta);
+		}
+		
+		System.out.println(positionX + " " + positionY + " " + playerX + " " + playerY);
+		
 		this.aabb.x = positionX;
 		this.aabb.y = positionY;
 	}

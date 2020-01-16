@@ -55,6 +55,7 @@ public class Game extends JFrame implements Runnable,KeyListener,MouseMotionList
 						public void componentResized(ComponentEvent e) {
 							width = game.getWidth();
 							height = game.getHeight();
+							System.out.println(height);
 						}
 					});
 					game.addKeyListener(game);
@@ -83,21 +84,19 @@ public class Game extends JFrame implements Runnable,KeyListener,MouseMotionList
 		Timer timer = new Timer();
 		game.createBufferStrategy(2);
 		BufferStrategy bufferStrategy = game.getBufferStrategy();
-		map = new Map(5000, 5000, width, height);
+		map = new Map(8192);
 		player = new Player(300, 300);
 		while(running) {
 			float deltaTime = timer.elapsed();
 						
-			player.update(deltaTime);
-			
-			map.collide(player);
-			
+			player.update(deltaTime, map);
+		
 			Graphics2D g2d = (Graphics2D) bufferStrategy.getDrawGraphics();
 			g2d.clearRect(0, 0, width, height);
 			
 			player.render(g2d);
 			
-			map.render(g2d, player);
+			map.render(g2d, player, width, height);
 			
 			g2d.setColor(Color.red);
 			g2d.setFont(g2d.getFont().deriveFont(Font.BOLD, 20f));
@@ -160,7 +159,9 @@ public class Game extends JFrame implements Runnable,KeyListener,MouseMotionList
 
 	@Override
 	public void mouseMoved(MouseEvent e) {
-		player.aim(e.getX(), e.getY());
+		if(player != null) {
+			player.aim(e.getX(), e.getY());
+		}
 	}
 
 	@Override
