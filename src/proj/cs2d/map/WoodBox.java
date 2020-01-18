@@ -6,10 +6,10 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 public class WoodBox extends RenderableMapObject {
-	private static Image img;
+	private static Image img = null;
 	
 	public WoodBox(int x, int y, int width, int height) {
-		super(x, y, width, height, img, true);
+		super(x, y, width, height, img == null ? loadImage() : img, true);
 	}
 	
 	private static Image loadImage() {

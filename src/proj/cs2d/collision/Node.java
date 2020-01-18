@@ -2,13 +2,14 @@ package proj.cs2d.collision;
 
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 import proj.cs2d.map.MapObject;
 
-public class Node {
+public class Node implements Serializable {
 	private Rectangle rect;
 	private int level;
 	private Node[] children;

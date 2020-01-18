@@ -2,13 +2,14 @@ package proj.cs2d.collision;
 
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 import proj.cs2d.map.MapObject;
 
-public class Quadtree {
+public class Quadtree implements Serializable {
 	protected final static int MAX_OBJECTS = 10;
 	protected final static int MAX_LEVELS = 5;
 	

@@ -1,6 +1,9 @@
 package proj.cs2d;
 
 import java.awt.Graphics2D;
+import java.awt.HeadlessException;
+import java.awt.Point;
+import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
@@ -11,6 +14,9 @@ import java.awt.event.MouseMotionAdapter;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferStrategy;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
 
 import proj.cs2d.map.Map;
 
@@ -24,7 +30,7 @@ public class Game {
 	
 	public Game(Map map) {
 		this.window = new Window();
-		this.deltaTimer = new Timer();
+		this.deltaTimer = new Timer(); 
 		this.map = map;
 	}
 		
@@ -34,7 +40,12 @@ public class Game {
 		bufferStrategy = window.getBufferStrategy();
 		player = new Player(map, 0);
 		camera = new Camera(player, window.getWidth(), window.getHeight());
-				
+		
+		// Crosshair
+		try {
+			window.setCursor(Toolkit.getDefaultToolkit().createCustomCursor(ImageIO.read(Game.class.getResourceAsStream("/crosshair.png")), new Point(16, 16), "Crosshair"));
+		} catch (HeadlessException | IndexOutOfBoundsException | IOException e2) {}
+	
 		this.window.addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent e) {
@@ -116,6 +127,8 @@ public class Game {
 			float delta = deltaTimer.elapsed();
 						
 			player.update(delta, camera, map);
+			
+			map.update(delta);
 			
 			camera.apply(g2d);
 			

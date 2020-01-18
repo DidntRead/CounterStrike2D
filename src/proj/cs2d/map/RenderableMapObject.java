@@ -4,10 +4,16 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
+import javax.imageio.ImageIO;
 
 public class RenderableMapObject extends MapObject {
 	protected Color color = null;
-	protected Image img = null;
+	protected transient Image img = null;
 	protected boolean scale;
 		
 	public RenderableMapObject(int x, int y, int width, int height, Image img, boolean scale) {
@@ -39,8 +45,25 @@ public class RenderableMapObject extends MapObject {
 		if(color != null) {
 			g2d.setColor(color);
 			g2d.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
-		} else {
+		} else if (img != null) {
 			g2d.drawImage(img, bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, 0, 0, scale ? img.getWidth(null) : bounds.width, scale ? img.getHeight(null) : bounds.height, null);
 		}
 	}
+	
+	// Serialization
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject();
+        out.writeBoolean(img != null);
+        if(img != null) {
+        	ImageIO.write((BufferedImage)img, "png", out);
+        }
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        final boolean hasImage = in.readBoolean();
+        if(hasImage) {
+        	img = ImageIO.read(in);
+        }
+    }
 }
