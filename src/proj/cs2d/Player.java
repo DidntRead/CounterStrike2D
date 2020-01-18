@@ -83,7 +83,6 @@ public class Player {
 		int changeX = (int) (velocityX * delta);
 		int changeY = (int) (velocityY * delta);
 		
-		// X
 		if(!map.collide(new Rectangle(bounds.x + changeX, bounds.y, bounds.width, bounds.height), this)) {
 			bounds.x += changeX;
 			camera.update(-changeX, 0);
@@ -94,9 +93,6 @@ public class Player {
 			bounds.y += changeY;
 			camera.update(0, -changeY);
 		}
-		
-		System.out.println(camera.toString());
-		System.out.println(bounds.x + " " + bounds.y);
 	}
 	
 	public int getHealth() {

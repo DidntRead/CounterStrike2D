@@ -43,7 +43,8 @@ public class Node implements Serializable {
 	public void remove(MapObject obj) {
 		if(!objects.remove(obj)) {
 			if(!isLeaf()) {
-				selectNode(obj.getBounds()).remove(obj);
+				Node node = selectNode(obj.getBounds());
+				if(node != this) node.remove(obj);
 			}
 		}
 	}

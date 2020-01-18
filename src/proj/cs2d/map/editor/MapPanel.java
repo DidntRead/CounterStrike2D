@@ -38,7 +38,7 @@ public class MapPanel extends JPanel {
 	private int startComponentX, startComponentY;
 	
 	public MapPanel() {
-		this.camera = new Camera(0, 0, 600, 600);		
+		this.camera = new Camera(0, 0, 1000, 1000);		
 		
 		JComponent component = this;
 		
@@ -53,6 +53,7 @@ public class MapPanel extends JPanel {
 					startY = Y;
 				} else if(e.getButton() == MouseEvent.BUTTON3) {
 					MapObject obj = Editor.map.collideMapEditor(new Point(X, Y));
+					System.out.println(X + " " + Y);
 					if(obj != null) {
 						Editor.map.remove(obj);
 					}
@@ -63,7 +64,6 @@ public class MapPanel extends JPanel {
 					startY = Y;
 					if(Editor.chosen == 0) {
 						obj = Editor.map.collideMapEditor(new Point(startX, startY));
-						System.out.println(obj == null);
 						if(obj != null) {
 							startComponentX = obj.getX();
 							startComponentY = obj.getY();

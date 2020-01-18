@@ -1,9 +1,10 @@
 package proj.cs2d;
 
-import proj.cs2d.map.Cool;
+import proj.cs2d.map.MapLoader;
 
 public class Main {
 	public static void main(String[] args) {
-		new Game(new Cool()).start();
+		MapLoader.load(Main.class.getResourceAsStream("/cool.map")).debug();
+		new Game(MapLoader.load(Main.class.getResourceAsStream("/cool.map"))).start();
 	}
 }

@@ -13,9 +13,11 @@ import java.security.KeyStore;
 import javax.swing.border.EmptyBorder;
 
 import proj.cs2d.Game;
+import proj.cs2d.Main;
 import proj.cs2d.map.Cool;
 import proj.cs2d.map.HealthPickup;
 import proj.cs2d.map.Map;
+import proj.cs2d.map.MapLoader;
 import proj.cs2d.map.WoodBox;
 
 public class Editor extends JFrame {
@@ -29,7 +31,7 @@ public class Editor extends JFrame {
 	static int align = 16;
 	static boolean collidable = true;
 	private JPanel contentPane;
-	static Map map = new Cool();
+	static Map map = MapLoader.load(Editor.class.getResourceAsStream("/cool.map"));
 	private JTextField textField;
 
 	public static void main(String[] args) {
@@ -55,7 +57,7 @@ public class Editor extends JFrame {
 	public Editor() {
 		setTitle("MapEditor");
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		setBounds(100, 100, 800, 600);
+		setBounds(100, 100, 1200, 700);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
@@ -102,7 +104,7 @@ public class Editor extends JFrame {
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
 		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-		scrollPane.setBounds(20, 45, 564, 516);
+		scrollPane.setBounds(0, 45, 984, 616);
 		contentPane.add(scrollPane);
 		
 		JScrollBar horizontal = scrollPane.getHorizontalScrollBar();
@@ -137,9 +139,11 @@ public class Editor extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				String mapSize = JOptionPane.showInputDialog("Input map size: ");
-				int size = mapSize == null ? 10240 : Integer.valueOf(mapSize);
-				map = new Map(size);
-				repaint();
+				if(mapSize != null) {
+					map = new Map(Integer.valueOf(mapSize));
+					scrollPane.invalidate();
+					repaint();
+				}
 			}
 		});
 		contentPane.add(btnNew);
@@ -185,9 +189,9 @@ public class Editor extends JFrame {
 		contentPane.add(btnSave);
 		
 		JPanel toolbar = new JPanel();
-		toolbar.setBounds(594, 45, 190, 516);
+		toolbar.setBounds(994, 45, 190, 616);
 		contentPane.add(toolbar);
-		toolbar.setLayout(new GridLayout(5, 2, 0, 0));
+		toolbar.setLayout(new GridLayout(6, 2, 0, 0));
 		
 		createToolbar(toolbar);
 		

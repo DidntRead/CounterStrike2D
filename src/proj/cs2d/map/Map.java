@@ -5,6 +5,7 @@ import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,7 +23,7 @@ public class Map implements Serializable {
 	protected List<Updatable> updatable;
 	protected MapObject spawnPoint0, spawnPoint1;
 	protected int size;
-	
+
 	public Map(int size) {
 		this.tree = new Quadtree(size);
 		this.size = size;
@@ -61,11 +62,11 @@ public class Map implements Serializable {
 	public Point getSpawnPosition(int team) {
 		int x,y;
 		if(team == 0) {
-			x = ThreadLocalRandom.current().nextInt(spawnPoint0.bounds.x + spawnPoint0.bounds.width);
-			y = ThreadLocalRandom.current().nextInt(spawnPoint0.bounds.y + spawnPoint0.bounds.height);
+			x = ThreadLocalRandom.current().nextInt(spawnPoint0.bounds.x + spawnPoint0.bounds.width - 70) + 35;
+			y = ThreadLocalRandom.current().nextInt(spawnPoint0.bounds.y + spawnPoint0.bounds.height - 58) + 29;
 		} else {
-			x = ThreadLocalRandom.current().nextInt(spawnPoint1.bounds.x + spawnPoint1.bounds.width);
-			y = ThreadLocalRandom.current().nextInt(spawnPoint1.bounds.y + spawnPoint1.bounds.height);
+			x = ThreadLocalRandom.current().nextInt(spawnPoint1.bounds.x + spawnPoint1.bounds.width - 70) + 35;
+			y = ThreadLocalRandom.current().nextInt(spawnPoint1.bounds.y + spawnPoint1.bounds.height - 58) + 29;
 		}
 		return new Point(x, y);
 	}
@@ -75,7 +76,8 @@ public class Map implements Serializable {
 	}
 	
 	public void render(Graphics2D g2d, Camera camera) {
-		HashSet<MapObject> objects = tree.getAllCollision(camera.getBounds());
+		//HashSet<MapObject> objects = tree.getAllCollision(camera.getBounds());
+		List<MapObject> objects = tree.getAll();
 		for(MapObject obj : objects) {
 			if(obj instanceof RenderableMapObject) {
 				((RenderableMapObject) obj).render(g2d);
@@ -111,8 +113,9 @@ public class Map implements Serializable {
 	}
 	
 	public boolean collide(Rectangle rect, Player player) {
-		if(player.getBounds().x < 0 || player.getBounds().y < 0 || player.getBounds().x > size || player.getBounds().y > size) return true;
-		HashSet<MapObject> objects = tree.getAllCollision(rect);
+		if(rect.x < 0 || rect.y < 0 || rect.x > size || rect.y > size) return true;
+		//HashSet<MapObject> objects = tree.getAllCollision(rect);
+		List<MapObject> objects = tree.getAll();
 		for(MapObject obj : objects) {
 			if(obj.isCollidable()) {
 				if(rect.intersects(obj.getBounds())) return true;
@@ -126,7 +129,9 @@ public class Map implements Serializable {
 	}
 	
 	public MapObject collideMapEditor(Point p) {
-		HashSet<MapObject> objects = tree.getAllCollision(p);
+		List<MapObject> objects = tree.getAll();
+
+		//HashSet<MapObject> objects = tree.getAllCollision(p);
 		if(spawnPoint0 != null) objects.add(spawnPoint0);
 		if(spawnPoint1 != null) objects.add(spawnPoint1);
 		for(MapObject obj : objects) {
@@ -143,5 +148,15 @@ public class Map implements Serializable {
 			}
 		}
 		return null;
+	}
+
+	public void debug() {
+		List<MapObject> objects = tree.getAll();
+		for(MapObject obj : objects) {
+			RenderableMapObject obj2 = (RenderableMapObject)obj;
+			if(obj2.color.getRed() > 50) {
+				System.out.println(obj2.bounds.toString());
+			}
+		}
 	}
 }
