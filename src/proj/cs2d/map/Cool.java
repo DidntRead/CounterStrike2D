@@ -13,7 +13,7 @@ public class Cool extends Map {
 		
 		//tree.insert(new WoodBox(50, 50, 200, 200));
 		for(int i = 0; i < 100; i++) {
-			tree.insert(new RenderableMapObject(ThreadLocalRandom.current().nextInt(5000), ThreadLocalRandom.current().nextInt(5000), 100, 50, Color.green));
+			add(new RenderableMapObject(ThreadLocalRandom.current().nextInt(5000), ThreadLocalRandom.current().nextInt(5000), 100, 50, Color.green));
 		}
 	}
 }

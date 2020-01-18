@@ -47,6 +47,12 @@ public class Map implements Serializable {
 		this.tree.insert(obj);
 	}
 	
+	public void remove(MapObject obj) {
+		if(obj instanceof Updatable) updatable.remove((Updatable) obj);
+		System.out.println(obj == null);
+		this.tree.remove(obj);
+	}
+	
 	public void setSpawnPoint(int team, MapObject spawnPoint) {
 		if(team == 0) spawnPoint0 = spawnPoint;
 		else spawnPoint1 = spawnPoint;

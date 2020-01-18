@@ -23,6 +23,10 @@ public class Quadtree implements Serializable {
 		root.insert(obj);
 	}
 	
+	public void remove(MapObject obj) {
+		root.remove(obj);
+	}
+	
 	public List<MapObject> getAll() {
 		ArrayList<MapObject> list = new ArrayList<MapObject>();
 		root.getAll(list);

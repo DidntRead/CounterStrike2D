@@ -45,14 +45,22 @@ public class MapPanel extends JPanel {
 		addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
-				if(e.getButton() == MouseEvent.BUTTON3) {
+				int X = e.getX() + horizontal;
+				int Y = e.getY() + vertical;
+				if(e.getButton() == MouseEvent.BUTTON2) {
 					mapDrag = true;
-					startX = e.getX();
-					startY = e.getY();
+					startX = X;
+					startY = Y;
+				} else if(e.getButton() == MouseEvent.BUTTON3) {
+					MapObject obj = Editor.map.collideMapEditor(new Point(X, Y));
+					if(obj != null) {
+						Editor.map.remove(obj);
+					}
+					repaint();
 				} else if(e.getButton() == MouseEvent.BUTTON1) {
 					componentCreate = true;
-					startX = e.getX();
-					startY = e.getY();
+					startX = X;
+					startY = Y;
 					if(Editor.chosen == 0) {
 						obj = Editor.map.collideMapEditor(new Point(startX, startY));
 						System.out.println(obj == null);
@@ -90,7 +98,7 @@ public class MapPanel extends JPanel {
 			
 			@Override
 			public void mouseReleased(MouseEvent e) {
-				if(e.getButton() == MouseEvent.BUTTON3) {
+				if(e.getButton() == MouseEvent.BUTTON2) {
 					mapDrag = false;
 				} else if(e.getButton() == MouseEvent.BUTTON1) {
 					componentCreate = false;
@@ -104,18 +112,21 @@ public class MapPanel extends JPanel {
 		addMouseMotionListener(new MouseMotionAdapter() {
 			@Override
 			public void mouseDragged(MouseEvent e) {
+				int X = e.getX() + horizontal;
+				int Y = e.getY() + vertical;
+				
 				if(mapDrag) {
                     JViewport viewPort = (JViewport) SwingUtilities.getAncestorOfClass(JViewport.class, component);
                     
                     Rectangle view = viewPort.getViewRect();
-                    view.x += startX - e.getX();
-                    view.y += startY - e.getY();
+                    view.x += startX - X;
+                    view.y += startY - Y;
                     
 					scrollRectToVisible(view);
 				} else if(componentCreate) {
 					if(Editor.chosen == 0 && obj != null) {
-						int changeX = (e.getX() - startX);
-						int changeY = (e.getY() - startY);
+						int changeX = (X - startX);
+						int changeY = (Y - startY);
 						if(e.isShiftDown()) {
 							if(movement == null) {
 								if(changeX > changeY) movement = MovementDirection.HORIZONTAL;
@@ -130,17 +141,14 @@ public class MapPanel extends JPanel {
 						obj.setPosition(round(startComponentX + changeX), round(startComponentY + changeY));
 						repaint();
 					} else if(Editor.chosen == 1 || Editor.chosen == 2 || Editor.chosen == 3 || Editor.chosen == 4) {
-						if(e.isControlDown()) {
-							
+						obj.setSize(round(X - startX), e.isControlDown() ? round(X - startX) : round(Y - startY));
+						if(startX > X) {
+							obj.setPosition(round(X), obj.getY());
+							obj.setSize(round(startX - X), e.isControlDown() ? round(startX - X) : obj.getHeight());
 						}
-						obj.setSize(round(e.getX() - startX), e.isControlDown() ? round(e.getX() - startX) : round(e.getY() - startY));
-						if(startX > e.getX()) {
-							obj.setPosition(round(e.getX()), obj.getY());
-							obj.setSize(round(startX - e.getX()), e.isControlDown() ? round(startX - e.getX()) : obj.getHeight());
-						}
-						if(startY > e.getY()) {
-							obj.setPosition(obj.getX(), round(e.getY()));
-							obj.setSize(e.isControlDown() ? round(startY - e.getY()) : obj.getWidth(), round(startY - e.getY()));
+						if(startY > Y) {
+							obj.setPosition(obj.getX(), round(Y));
+							obj.setSize(e.isControlDown() ? round(startY - Y) : obj.getWidth(), round(startY - Y));
 						}
 						repaint();
 					}

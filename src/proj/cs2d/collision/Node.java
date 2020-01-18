@@ -40,6 +40,14 @@ public class Node implements Serializable {
 		}
 	}
 	
+	public void remove(MapObject obj) {
+		if(!objects.remove(obj)) {
+			if(!isLeaf()) {
+				selectNode(obj.getBounds()).remove(obj);
+			}
+		}
+	}
+	
 	private boolean isLeaf() {
 		return children == null;
 	}
