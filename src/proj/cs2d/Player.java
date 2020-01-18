@@ -12,6 +12,7 @@ import javax.imageio.ImageIO;
 
 import proj.cs2d.map.Map;
 import proj.cs2d.map.MapObject;
+import proj.cs2d.map.RemotePlayer;
 
 public class Player {
 	private static Image[] images = null;
@@ -20,6 +21,8 @@ public class Player {
 	private int hitX = Integer.MIN_VALUE, hitY;
 	private double rotation = 0;
 	private int health = 100;
+	private int damage = 25;
+	private Cooldown shoot;
 	private Rectangle bounds;
 	private int team = 0;
 	private Image img;
@@ -29,19 +32,9 @@ public class Player {
 		this.velocityX = 0;
 		this.velocityY = 0;
 		this.team = team;
-		
-		if(images == null) {
-			images = new Image[2];
-			try {
-				images[0] = ImageIO.read(Player.class.getResourceAsStream("/player0.png"));
-				images[1] = ImageIO.read(Player.class.getResourceAsStream("/player1.png"));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		
+		this.shoot = new Cooldown(250);
 		Point p = map.getSpawnPosition(team);
-		this.img = images[team];
+		this.img = getImage(team);
 		this.bounds = new Rectangle(p.x, p.y, img.getWidth(null), img.getHeight(null));
 	}
 	
@@ -104,7 +97,11 @@ public class Player {
 	 * @param v amount to increase or decrease
 	 */
 	public void changeHealth(int v) {
-		
+		this.health += v;
+	}
+	
+	public void sneak(boolean v) {
+		this.speed = v ? 40 : 120;
 	}
 	
 	public int getX() {
@@ -122,17 +119,38 @@ public class Player {
 	public int getHeight() {
 		return this.bounds.height;
 	}
+	
+	public static Image getImage(int team) {
+		if(images == null) {
+			images = new Image[2];
+			try {
+				images[0] = ImageIO.read(Player.class.getResourceAsStream("/player0.png"));
+				images[1] = ImageIO.read(Player.class.getResourceAsStream("/player1.png"));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return images[team];
+	}
 
 	public void shoot(Map map) {
-		Raycast raycast = new Raycast(bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2), rotation);
-		while(raycast.getLength() < 900) {
-			Point p = raycast.progress();
-			MapObject obj = map.collide(p);
-			hitX = p.x;
-			hitY = p.y;
-			if(obj != null) {
-				System.out.println("Hit");
-				break;
+		if(shoot.hasPassed()) {
+			shoot.reset();
+			Raycast raycast = new Raycast(bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2), rotation);
+			while(raycast.getLength() < 900) {
+				Point p = raycast.progress();
+				MapObject obj = map.collide(p);
+				hitX = p.x;
+				hitY = p.y;
+				if(obj != null) {
+					if(obj instanceof RemotePlayer) {
+						RemotePlayer other = (RemotePlayer)obj;
+						if(other.getTeam() != this.team) {
+							((RemotePlayer)obj).damage(damage);
+						}
+					}
+					break;
+				}
 			}
 		}
 	}

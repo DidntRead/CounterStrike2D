@@ -62,11 +62,15 @@ public class Map implements Serializable {
 	public Point getSpawnPosition(int team) {
 		int x,y;
 		if(team == 0) {
-			x = ThreadLocalRandom.current().nextInt(spawnPoint0.bounds.x + spawnPoint0.bounds.width - 70) + 35;
-			y = ThreadLocalRandom.current().nextInt(spawnPoint0.bounds.y + spawnPoint0.bounds.height - 58) + 29;
+			do {
+				x = ThreadLocalRandom.current().nextInt(spawnPoint0.bounds.x + spawnPoint0.bounds.width - 70) + 35;
+				y = ThreadLocalRandom.current().nextInt(spawnPoint0.bounds.y + spawnPoint0.bounds.height - 58) + 29;
+			} while(collide(new Rectangle(x, y, 35, 29), null));
 		} else {
-			x = ThreadLocalRandom.current().nextInt(spawnPoint1.bounds.x + spawnPoint1.bounds.width - 70) + 35;
-			y = ThreadLocalRandom.current().nextInt(spawnPoint1.bounds.y + spawnPoint1.bounds.height - 58) + 29;
+			do {
+				x = ThreadLocalRandom.current().nextInt(spawnPoint1.bounds.x + spawnPoint1.bounds.width - 70) + 35;
+				y = ThreadLocalRandom.current().nextInt(spawnPoint1.bounds.y + spawnPoint1.bounds.height - 58) + 29;
+			} while(collide(new Rectangle(x, y, 35, 29), null));
 		}
 		return new Point(x, y);
 	}
@@ -148,15 +152,5 @@ public class Map implements Serializable {
 			}
 		}
 		return null;
-	}
-
-	public void debug() {
-		List<MapObject> objects = tree.getAll();
-		for(MapObject obj : objects) {
-			RenderableMapObject obj2 = (RenderableMapObject)obj;
-			if(obj2.color.getRed() > 50) {
-				System.out.println(obj2.bounds.toString());
-			}
-		}
 	}
 }

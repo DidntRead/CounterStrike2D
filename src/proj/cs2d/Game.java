@@ -1,5 +1,7 @@
 package proj.cs2d;
 
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.HeadlessException;
 import java.awt.Point;
@@ -19,6 +21,7 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 import proj.cs2d.map.Map;
+import proj.cs2d.map.RemotePlayer;
 
 public class Game {
 	private java.awt.Window window;
@@ -32,13 +35,14 @@ public class Game {
 		this.window = new Window();
 		this.deltaTimer = new Timer(); 
 		this.map = map;
+		this.map.add(new RemotePlayer(50, 50, 0));
 	}
 		
 	public void start() {
 		window.setVisible(true);
 		window.createBufferStrategy(2);
 		bufferStrategy = window.getBufferStrategy();
-		player = new Player(map, 0);
+		player = new Player(map, 1);
 		camera = new Camera(player, window.getWidth(), window.getHeight());
 		
 		// Crosshair
@@ -99,6 +103,9 @@ public class Game {
 						player.velocityX = player.getSpeed();
 					}
 					break;
+				case KeyEvent.VK_SHIFT:
+					player.sneak(true);
+					break;
 				}
 			}
 			
@@ -117,6 +124,9 @@ public class Game {
 				case KeyEvent.VK_D:
 					if(player.velocityX > 0) player.velocityX = 0;
 					break;
+				case KeyEvent.VK_SHIFT:
+					player.sneak(false);
+					break;
 				}
 			}
 		});
@@ -125,10 +135,15 @@ public class Game {
 			Graphics2D g2d = (Graphics2D) bufferStrategy.getDrawGraphics();
 			g2d.clearRect(0, 0, 600, 600);
 			float delta = deltaTimer.elapsed();
-						
+
 			player.update(delta, camera, map);
 			
 			map.update(delta);
+			
+			// Health
+			g2d.setColor(Color.RED);
+			g2d.setFont(g2d.getFont().deriveFont(Font.BOLD, 20f));
+			g2d.drawString(String.valueOf(player.getHealth()), 10, camera.getHeight() - 10);
 			
 			camera.apply(g2d);
 			
