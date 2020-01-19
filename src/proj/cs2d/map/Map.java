@@ -7,6 +7,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -98,7 +99,7 @@ public class Map implements Serializable {
 	}
 	
 	public void renderMapEditor(Graphics2D g2d, Camera camera) {
-		HashSet<MapObject> objects = tree.getAllCollision(camera.getBounds());
+		List<MapObject> objects = tree.getAllCollision(camera.getBounds());
 		if(spawnPoint0 != null) {
 			g2d.drawRect(spawnPoint0.getX(), spawnPoint0.getY(), spawnPoint0.getWidth(), spawnPoint0.getHeight());
 			drawCenteredString(g2d, "Team 0", spawnPoint0.getX(), spawnPoint0.getY(), spawnPoint0.getWidth(), spawnPoint0.getHeight() / 2);
@@ -118,8 +119,8 @@ public class Map implements Serializable {
 	
 	public boolean collide(Rectangle rect, Player player) {
 		if(rect.x < 0 || rect.y < 0 || rect.x > size || rect.y > size) return true;
-		//HashSet<MapObject> objects = tree.getAllCollision(rect);
-		List<MapObject> objects = tree.getAll();
+		List<MapObject> objects = tree.getAllCollision(rect);
+		//List<MapObject> objects = tree.getAll();
 		for(MapObject obj : objects) {
 			if(obj.isCollidable()) {
 				if(rect.intersects(obj.getBounds())) return true;
@@ -133,9 +134,7 @@ public class Map implements Serializable {
 	}
 	
 	public MapObject collideMapEditor(Point p) {
-		List<MapObject> objects = tree.getAll();
-
-		//HashSet<MapObject> objects = tree.getAllCollision(p);
+		List<MapObject> objects = tree.getAllCollision(p);
 		if(spawnPoint0 != null) objects.add(spawnPoint0);
 		if(spawnPoint1 != null) objects.add(spawnPoint1);
 		for(MapObject obj : objects) {
@@ -144,8 +143,18 @@ public class Map implements Serializable {
 		return null;
 	}
 	
+	public MapObject collideView(Point p) {
+		List<MapObject> objects = tree.getAllCollision(p);
+		for(MapObject obj : objects) {
+			if(obj.isCollidable() && !(obj instanceof RemotePlayer)) {
+				if(obj.getBounds().contains(p)) return obj;
+			}
+		}
+		return null;
+	}
+	
 	public MapObject collide(Point p) {
-		HashSet<MapObject> objects = tree.getAllCollision(p);
+		List<MapObject> objects = tree.getAllCollision(p);
 		for(MapObject obj : objects) {
 			if(obj.isCollidable()) {
 				if(obj.getBounds().contains(p)) return obj;

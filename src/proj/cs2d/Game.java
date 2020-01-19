@@ -25,7 +25,10 @@ import proj.cs2d.map.Map;
 import proj.cs2d.map.RemotePlayer;
 
 public class Game {
-	private java.awt.Window window;
+	public static final int enableViewRectangle = 2;
+	public static final boolean enableFastRenderingHints = false;
+	
+	private Window window;
 	private BufferStrategy bufferStrategy;
 	private Timer deltaTimer;
 	private Player player;
@@ -149,7 +152,6 @@ public class Game {
 			}
 		});
 		
-		// TEST
 		RenderingHints hints = new RenderingHints(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
 		hints.put(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
 		hints.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
@@ -157,9 +159,10 @@ public class Game {
 				
 		while(window.isShowing()) {
 			Graphics2D g2d = (Graphics2D) bufferStrategy.getDrawGraphics();
-			//g2d.addRenderingHints(hints);
 			
-			g2d.setBackground(Color.black);
+			if(enableFastRenderingHints) g2d.addRenderingHints(hints); 
+			
+			if(enableViewRectangle == 1) g2d.setBackground(Color.black);
 			g2d.clearRect(0, 0, 600, 600);
 			
 			double delta = deltaTimer.elapsed();
@@ -170,8 +173,11 @@ public class Game {
 			
 			camera.apply(g2d);
 			
-			g2d.setColor(new Color(238, 238, 238));
-			g2d.fillRect(player.getX() - camera.getWidth() / 2, player.getY() - camera.getHeight() / 2, camera.getWidth(), camera.getHeight());
+			// Background
+			if(enableViewRectangle == 1) {
+				g2d.setColor(new Color(238, 238, 238));
+				g2d.fillRect(player.getX() - camera.getWidth() / 2, player.getY() - camera.getHeight() / 2, camera.getWidth(), camera.getHeight());
+			}
 			
 			player.render(g2d);
 

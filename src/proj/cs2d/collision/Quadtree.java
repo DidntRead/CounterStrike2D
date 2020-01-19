@@ -33,14 +33,14 @@ public class Quadtree implements Serializable {
 		return list;
 	}
 	
-	public HashSet<MapObject> getAllCollision(Rectangle rect) {
-		HashSet<MapObject> set = new HashSet<MapObject>(20);
+	public List<MapObject> getAllCollision(Rectangle rect) {
+		List<MapObject> set = new ArrayList<MapObject>(20);
 		root.getAllIn(rect, set);
 		return set;
 	}
 	
-	public HashSet<MapObject> getAllCollision(Point p) {
-		HashSet<MapObject> set = new HashSet<MapObject>(20);
+	public List<MapObject> getAllCollision(Point p) {
+		List<MapObject> set = new ArrayList<MapObject>(20);
 		root.getAllIn(p, set);
 		return set;
 	}

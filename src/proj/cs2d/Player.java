@@ -112,7 +112,9 @@ public class Player {
 			camera.update(0, -changeY);
 		}
 		
-		camera.updateViewPolygon(this);
+		if(Game.enableViewRectangle > 0) {
+			camera.updateViewPolygon(this, map);
+		}
 		
 		if(heldDown) {
 			shoot(map);

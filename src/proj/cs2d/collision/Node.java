@@ -73,7 +73,7 @@ public class Node implements Serializable {
 		children[3] = new Node(new Rectangle(rect.x + halfWidth, rect.y + halfHeight, halfWidth, halfHeight), level + 1);
 	}
 	
-	protected void getAllIn(Rectangle rect, HashSet<MapObject> set) {
+	protected void getAllIn(Rectangle rect, List<MapObject> set) {
 		if(this.rect.intersects(rect)) {
 			set.addAll(objects);
 			if(!isLeaf()) {
@@ -85,7 +85,7 @@ public class Node implements Serializable {
 		}
 	}
 	
-	protected void getAllIn(Point p, HashSet<MapObject> set) {
+	protected void getAllIn(Point p, List<MapObject> set) {
 		if(this.rect.contains(p)) {
 			set.addAll(objects);
 			if(!isLeaf()) {

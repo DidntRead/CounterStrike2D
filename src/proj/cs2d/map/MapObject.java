@@ -59,4 +59,16 @@ public class MapObject implements Serializable {
 	public Rectangle getBounds() {
 		return this.bounds;
 	}
+	
+	@Override
+	public int hashCode() {
+		int hash = bounds.x;
+		hash *= 37;
+		hash += bounds.y;
+		hash *= 37;
+		hash += bounds.width;
+		hash *= 37;
+		hash += bounds.height;
+		return hash;
+	}
 }

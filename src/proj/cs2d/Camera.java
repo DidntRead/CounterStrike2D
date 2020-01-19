@@ -1,8 +1,12 @@
 package proj.cs2d;
 
+import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.Rectangle;
+
+import proj.cs2d.map.Map;
 
 public class Camera {
 	private int x, y;
@@ -36,31 +40,43 @@ public class Camera {
 		this.y += y;
 	}
 	
-	public void updateViewPolygon(Player player) {
-		int[] x = new int[3];
-		int[] y = new int[3];
+	public void updateViewPolygon(Player player, Map map) {
+		int raycastCount = 90;
+		double coneAngle = Math.toRadians(90);
 		
-		double angle = player.getRotation() + Math.toRadians(45);
-		double angle1 = player.getRotation() - Math.toRadians(195);
-		double angle2 = player.getRotation() - Math.toRadians(75);
+		int[] x = new int[raycastCount + 1];
+		int[] y = new int[raycastCount + 1];
 		
+		double centerAngle = player.getRotation() + Math.toRadians(15);
 		
-		x[1] = (int) (player.getCenterX() + 10 * Math.cos(angle));
-		y[1] = (int) (player.getCenterY() + 10 * Math.sin(angle));
-				
-		x[0] = (int) (x[1] + viewPolygonHeight * Math.cos(angle1));
-		y[0] = (int) (y[1] + viewPolygonHeight * Math.sin(angle1));
+		double reverseAngle = centerAngle + Math.toRadians(30);
+
+		x[0] = (int) (player.getCenterX() + 10 * Math.cos(reverseAngle));
+		y[0] = (int) (player.getCenterY() + 10 * Math.sin(reverseAngle));
 		
-		x[2] = (int) (x[1] + viewPolygonHeight * Math.cos(angle2));
-		y[2] = (int) (y[1] + viewPolygonHeight * Math.sin(angle2));
+		int startX = player.getCenterX();
+		int startY = player.getCenterY();
 		
-		this.viewPolygon = new Polygon(x, y, 3);
+		int index = 1;
+		for(double angle = centerAngle - coneAngle / 2; angle < centerAngle + coneAngle / 2 && index < raycastCount + 1; angle += coneAngle / raycastCount, index++) {
+			Raycast raycast = new Raycast(startX, startY, angle, 20);
+			while(raycast.getLength() < viewPolygonHeight) {
+				Point p = raycast.progress();
+				x[index] = p.x;
+				y[index] = p.y;
+				if(map.collideView(p) != null) {
+					break;
+				}
+			}
+		}
 		
-		System.out.println("View triangle");
-		
-		for(int i = 0; i < 3; i++) {
+		System.out.println("View polygon");
+		for(int i = 0; i < raycastCount + 1; i++) {
 			System.out.println("X: " + x[i] + " Y: " + y[i]);
 		}
+		
+		this.viewPolygon = new Polygon(x, y, raycastCount + 1);
+		
 	}
 	
 	public void absoluteUpdate(int x, int y) {
@@ -90,7 +106,12 @@ public class Camera {
 	
 	public void apply(Graphics2D g2d) {
 		g2d.translate(x, y);
-		g2d.setClip(viewPolygon);
+		if(Game.enableViewRectangle == 1) {
+			g2d.setClip(viewPolygon);
+		} else if(Game.enableViewRectangle == 2) {
+			g2d.setColor(Color.red);
+			g2d.drawPolygon(viewPolygon);
+		}
 	}
 	
 	public void reverse(Graphics2D g2d) {
