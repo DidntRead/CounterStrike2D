@@ -25,8 +25,11 @@ public class RemotePlayer extends RenderableMapObject {
 	
 	public void damage(int amount) {
 		health -= amount;
-		System.out.println("Hit other player");
 		//TODO
+		System.out.println("Hit other player");
+		if(health <= 0) {
+			System.out.println("Killed other player");
+		}
 	}
 	
 	public int getTeam() {

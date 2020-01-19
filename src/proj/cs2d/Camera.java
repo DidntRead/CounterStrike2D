@@ -61,4 +61,8 @@ public class Camera {
 	public void apply(Graphics2D g2d) {
 		g2d.translate(x, y);
 	}
+	
+	public void reverse(Graphics2D g2d) {
+		g2d.translate(-x, -y);
+	}
 }

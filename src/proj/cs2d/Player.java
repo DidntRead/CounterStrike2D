@@ -17,22 +17,36 @@ import proj.cs2d.map.RemotePlayer;
 public class Player {
 	private static Image[] images = null;
 	
+	// Movement
+	private Rectangle bounds;
 	public int velocityX, velocityY;
 	private int hitX = Integer.MIN_VALUE, hitY;
+	private int speed = 120;
 	private double rotation = 0;
+	
+	// Damage & health
 	private int health = 100;
 	private int damage = 25;
 	private Cooldown shoot;
-	private Rectangle bounds;
+	private float damageDropoff = 0.8f;
+	private int dropoffDistance = 100;
+	private boolean heldDown = false;
+	
+	// Bullets
+	private boolean reloading = false;
+	private int clipSize = 30;
+	private int bullets = clipSize;
+	private Cooldown reloadCooldown;
+	
 	private int team = 0;
 	private Image img;
-	private int speed = 120;
 	
 	public Player(Map map, int team) {
 		this.velocityX = 0;
 		this.velocityY = 0;
 		this.team = team;
-		this.shoot = new Cooldown(250);
+		this.shoot = new Cooldown(175);
+		this.reloadCooldown = new Cooldown(1500);
 		Point p = map.getSpawnPosition(team);
 		this.img = getImage(team);
 		this.bounds = new Rectangle(p.x, p.y, img.getWidth(null), img.getHeight(null));
@@ -86,6 +100,36 @@ public class Player {
 			bounds.y += changeY;
 			camera.update(0, -changeY);
 		}
+		
+		if(heldDown) {
+			shoot(map);
+		}
+		
+		if(reloadCooldown.hasPassed()) {
+			reloading = false;
+		}
+	}
+	
+	public void reload() {
+		reloadCooldown.reset();
+		bullets = clipSize;
+		reloading = true;
+	}
+	
+	public boolean isReloading() {
+		return this.reloading;
+	}
+	
+	public float reloadRemaining() {
+		return this.reloadCooldown.remaining();
+	}
+	
+	public int getAmmoLeft() {
+		return this.bullets;
+	}
+	
+	public int getClipSize() {
+		return this.clipSize;
 	}
 	
 	public int getHealth() {
@@ -120,6 +164,10 @@ public class Player {
 		return this.bounds.height;
 	}
 	
+	public void mouseHeldDown(boolean v) {
+		this.heldDown = v;
+	}
+	
 	public static Image getImage(int team) {
 		if(images == null) {
 			images = new Image[2];
@@ -134,8 +182,9 @@ public class Player {
 	}
 
 	public void shoot(Map map) {
-		if(shoot.hasPassed()) {
+		if(shoot.hasPassed() && !reloading && bullets > 0) {
 			shoot.reset();
+			bullets--;
 			Raycast raycast = new Raycast(bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2), rotation);
 			while(raycast.getLength() < 900) {
 				Point p = raycast.progress();
@@ -146,12 +195,15 @@ public class Player {
 					if(obj instanceof RemotePlayer) {
 						RemotePlayer other = (RemotePlayer)obj;
 						if(other.getTeam() != this.team) {
-							((RemotePlayer)obj).damage(damage);
+							System.out.println((int) (this.damage * (Math.pow(damageDropoff, raycast.getLength() / dropoffDistance))));
+							((RemotePlayer)obj).damage((int) (this.damage * (Math.pow(damageDropoff, raycast.getLength() / dropoffDistance))));
 						}
 					}
 					break;
 				}
 			}
+		} else if(bullets == 0) {
+			reload();
 		}
 	}
 }

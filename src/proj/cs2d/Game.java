@@ -35,6 +35,8 @@ public class Game {
 		this.window = new Window();
 		this.deltaTimer = new Timer(); 
 		this.map = map;
+		
+		//TEST
 		this.map.add(new RemotePlayer(50, 50, 0));
 	}
 		
@@ -62,12 +64,24 @@ public class Game {
 			public void mouseMoved(MouseEvent e) {
 				player.aim(e.getX(), e.getY(), camera);
 			}
+			@Override
+			public void mouseDragged(MouseEvent e) {
+				player.aim(e.getX(), e.getY(), camera);
+			}
 		});
 		
 		this.window.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				player.shoot(map);
+			}
+			@Override
+			public void mousePressed(MouseEvent e) {
+				player.mouseHeldDown(true);
+			}
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				player.mouseHeldDown(false);
 			}
 		});
 		
@@ -106,6 +120,9 @@ public class Game {
 				case KeyEvent.VK_SHIFT:
 					player.sneak(true);
 					break;
+				case KeyEvent.VK_R:
+					player.reload();
+					break;
 				}
 			}
 			
@@ -140,16 +157,31 @@ public class Game {
 			
 			map.update(delta);
 			
-			// Health
-			g2d.setColor(Color.RED);
-			g2d.setFont(g2d.getFont().deriveFont(Font.BOLD, 20f));
-			g2d.drawString(String.valueOf(player.getHealth()), 10, camera.getHeight() - 10);
-			
 			camera.apply(g2d);
 			
 			player.render(g2d);
 						
 			map.render(g2d, camera);
+			
+			camera.reverse(g2d);
+			
+			// Health
+			g2d.setColor(Color.RED);
+			g2d.setFont(g2d.getFont().deriveFont(Font.BOLD, 20f));
+			g2d.drawString(String.valueOf(player.getHealth()), 10, camera.getHeight() - 10);
+			
+			// Reload indicator
+			if(player.isReloading()) {
+				g2d.setColor(Color.black);
+				g2d.fillRect(camera.getWidth() / 2 - 50, camera.getHeight() / 2 + 30, 140, 20);
+				g2d.setColor(Color.green);
+				g2d.fillRect(camera.getWidth() / 2 - 50, camera.getHeight() / 2 + 30, (int) (140 * player.reloadRemaining()), 20);
+				g2d.drawString("RELOADING...", camera.getWidth() / 2 - 50, camera.getHeight() / 2 + 20);
+			}
+			
+			// Ammo
+			g2d.setColor(Color.orange);
+			g2d.drawString(player.getAmmoLeft() + "/" + player.getClipSize(), camera.getWidth() - 60, camera.getHeight() - 10);
 			
 			g2d.dispose();
 			bufferStrategy.show();

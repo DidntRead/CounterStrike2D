@@ -3,18 +3,14 @@ package proj.cs2d.map.editor;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.*;
-import java.beans.PropertyChangeListener;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.io.*;
-import java.security.KeyStore;
 
 import javax.swing.border.EmptyBorder;
 
 import proj.cs2d.Game;
-import proj.cs2d.Main;
-import proj.cs2d.map.Cool;
 import proj.cs2d.map.HealthPickup;
 import proj.cs2d.map.Map;
 import proj.cs2d.map.MapLoader;

@@ -22,6 +22,14 @@ public class Cooldown {
 	}
 	
 	/**
+	 * Get remaining time in [0-1] range
+	 * @return
+	 */
+	public float remaining() {
+		return (System.currentTimeMillis() - start) / (float)cooldown;
+	}
+	
+	/**
 	 * Reset cooldown
 	 */
 	public void reset() {
