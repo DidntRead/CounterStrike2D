@@ -5,6 +5,7 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.HeadlessException;
 import java.awt.Point;
+import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -148,9 +149,19 @@ public class Game {
 			}
 		});
 		
+		// TEST
+		RenderingHints hints = new RenderingHints(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+		hints.put(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
+		hints.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
+		hints.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+				
 		while(window.isShowing()) {
 			Graphics2D g2d = (Graphics2D) bufferStrategy.getDrawGraphics();
+			//g2d.addRenderingHints(hints);
+			
+			g2d.setBackground(Color.black);
 			g2d.clearRect(0, 0, 600, 600);
+			
 			double delta = deltaTimer.elapsed();
 
 			player.update(delta, camera, map);
@@ -159,10 +170,13 @@ public class Game {
 			
 			camera.apply(g2d);
 			
-			player.render(g2d);
-						
-			map.render(g2d, camera);
+			g2d.setColor(new Color(238, 238, 238));
+			g2d.fillRect(player.getX() - camera.getWidth() / 2, player.getY() - camera.getHeight() / 2, camera.getWidth(), camera.getHeight());
 			
+			player.render(g2d);
+
+			map.render(g2d, camera);
+
 			camera.reverse(g2d);
 			
 			// Health

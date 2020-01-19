@@ -22,11 +22,12 @@ public class Player {
 	// Movement
 	private Rectangle bounds;
 	public int velocityX, velocityY;
-	private int hitX = Integer.MIN_VALUE, hitY;
 	private int speed = 140;
 	private double rotation = 0;
 	
 	// Damage & health
+	private int hitX = Integer.MIN_VALUE, hitY;
+	private int hitFrames = 0;
 	private int health = 100;
 	private int damage = 25;
 	private Cooldown shoot;
@@ -54,16 +55,24 @@ public class Player {
 		this.bounds = new Rectangle(p.x, p.y, img.getWidth(null), img.getHeight(null));
 	}
 	
-	public void render(Graphics2D g2d) {
+	public void render(Graphics2D g2d) {		
 		AffineTransform trans = g2d.getTransform();
 		g2d.rotate(rotation, bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2));
 		g2d.drawImage(img, bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, 0, 0, bounds.width, bounds.height, null);
 		g2d.setTransform(trans);
 		g2d.setColor(Color.ORANGE);
 		if(hitX != Integer.MIN_VALUE) {
+			hitFrames++;
 			g2d.drawLine(hitX, hitY, bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2));
-			hitX = Integer.MIN_VALUE;
+			if(hitFrames == 3) {
+				hitX = Integer.MIN_VALUE;
+				hitFrames = 0;
+			}
 		}
+	}
+	
+	public double getRotation() {
+		return this.rotation;
 	}
 	
 	public int getSpeed() {
@@ -102,6 +111,8 @@ public class Player {
 			bounds.y += changeY;
 			camera.update(0, -changeY);
 		}
+		
+		camera.updateViewPolygon(this);
 		
 		if(heldDown) {
 			shoot(map);
@@ -156,6 +167,14 @@ public class Player {
 	
 	public int getY() {
 		return this.bounds.y;
+	}
+	
+	public int getCenterX() {
+		return this.bounds.x + this.bounds.width / 2 ;
+	}
+	
+	public int getCenterY() {
+		return this.bounds.y + this.bounds.height / 2 ;
 	}
 	
 	public int getWidth() {
