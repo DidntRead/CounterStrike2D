@@ -151,7 +151,7 @@ public class Game {
 		while(window.isShowing()) {
 			Graphics2D g2d = (Graphics2D) bufferStrategy.getDrawGraphics();
 			g2d.clearRect(0, 0, 600, 600);
-			float delta = deltaTimer.elapsed();
+			double delta = deltaTimer.elapsed();
 
 			player.update(delta, camera, map);
 			
@@ -187,7 +187,7 @@ public class Game {
 			bufferStrategy.show();
 			
 			try {
-				Thread.sleep(50);
+				Thread.sleep(25);
 			} catch (InterruptedException e1) {
 				e1.printStackTrace();
 			}

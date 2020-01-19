@@ -44,7 +44,7 @@ public class HealthPickup extends Pickup implements Updatable {
 	}
 	
 	@Override
-	public void update(float delta) {
+	public void update(double delta) {
 		if(cooldown.hasPassed()) {
 			super.img = this.img;
 		}

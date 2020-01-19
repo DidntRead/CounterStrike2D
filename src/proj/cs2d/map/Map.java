@@ -37,7 +37,7 @@ public class Map implements Serializable {
 		}
 	}
 	
-	public void update(float delta) {
+	public void update(double delta) {
 		for(Updatable updatable : updatable) {
 			updatable.update(delta);
 		}

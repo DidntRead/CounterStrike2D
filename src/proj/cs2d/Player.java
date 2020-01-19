@@ -16,12 +16,14 @@ import proj.cs2d.map.RemotePlayer;
 
 public class Player {
 	private static Image[] images = null;
+	private static final int MOVE_SPEED = 150;
+	private static final int SNEAK_SPEED = 75;
 	
 	// Movement
 	private Rectangle bounds;
 	public int velocityX, velocityY;
 	private int hitX = Integer.MIN_VALUE, hitY;
-	private int speed = 120;
+	private int speed = 140;
 	private double rotation = 0;
 	
 	// Damage & health
@@ -86,7 +88,7 @@ public class Player {
 		rotation = angle2 - angle1;
 	}
 	
-	public void update(float delta, Camera camera, Map map) {
+	public void update(double delta, Camera camera, Map map) {
 		int changeX = (int) (velocityX * delta);
 		int changeY = (int) (velocityY * delta);
 		
@@ -145,7 +147,7 @@ public class Player {
 	}
 	
 	public void sneak(boolean v) {
-		this.speed = v ? 40 : 120;
+		this.speed = v ? SNEAK_SPEED : MOVE_SPEED;
 	}
 	
 	public int getX() {

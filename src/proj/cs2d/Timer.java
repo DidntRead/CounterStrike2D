@@ -28,9 +28,9 @@ public class Timer {
 	 * Get elapsed time since last call to elapsed
 	 * @return elapsed time in seconds
 	 */
-	public float elapsed() {
+	public double elapsed() {
 		long temp = time;
 		time = System.currentTimeMillis();
-		return (time - temp) / 1000f;
+		return (time - temp) / 1000d;
 	}
 }
