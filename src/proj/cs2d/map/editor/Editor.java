@@ -11,6 +11,7 @@ import java.io.*;
 import javax.swing.border.EmptyBorder;
 
 import proj.cs2d.Game;
+import proj.cs2d.map.Cool;
 import proj.cs2d.map.HealthPickup;
 import proj.cs2d.map.Map;
 import proj.cs2d.map.MapLoader;
@@ -27,7 +28,7 @@ public class Editor extends JFrame {
 	static int align = 16;
 	static boolean collidable = true;
 	private JPanel contentPane;
-	static Map map = MapLoader.load(Editor.class.getResourceAsStream("/cool.map"));
+	static Map map = new Cool();
 	private JTextField textField;
 
 	public static void main(String[] args) {

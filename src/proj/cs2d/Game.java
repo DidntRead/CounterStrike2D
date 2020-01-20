@@ -25,7 +25,7 @@ import proj.cs2d.map.Map;
 import proj.cs2d.map.RemotePlayer;
 
 public class Game {
-	public static final int enableViewRectangle = 2;
+	public static final int enableViewRectangle = 0;
 	public static final boolean enableFastRenderingHints = false;
 	
 	private Window window;
