@@ -40,7 +40,15 @@ public class RenderableMapObject extends MapObject {
 		super(new Rectangle(x, y, width, height));
 		this.color = color;
 	}
-		
+	
+	public Color getColor() {
+		return this.color;
+	}
+	
+	public void setColor(Color color) {
+		this.color = color;
+	}
+	
 	public void render(Graphics2D g2d) {
 		if(color != null) {
 			g2d.setColor(color);

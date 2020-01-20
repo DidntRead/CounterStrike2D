@@ -14,7 +14,7 @@ import proj.cs2d.Game;
 import proj.cs2d.map.Cool;
 import proj.cs2d.map.HealthPickup;
 import proj.cs2d.map.Map;
-import proj.cs2d.map.MapLoader;
+import proj.cs2d.map.RenderableMapObject;
 import proj.cs2d.map.WoodBox;
 
 public class Editor extends JFrame {
@@ -26,7 +26,9 @@ public class Editor extends JFrame {
 	static int cooldown = 5;
 	static int chosenTeam = 0;
 	static int align = 16;
-	static boolean collidable = true;
+	static JButton btnChange;
+	static JLabel lblColor;
+	static JCheckBox checkCollidable;
 	private JPanel contentPane;
 	static Map map = new Cool();
 	private JTextField textField;
@@ -192,16 +194,34 @@ public class Editor extends JFrame {
 		
 		createToolbar(toolbar);
 		
-		JCheckBox chckbxNewCheckBox = new JCheckBox("Collidable");
-		chckbxNewCheckBox.setSelected(true);
-		chckbxNewCheckBox.setBounds(580, 9, 97, 23);
-		chckbxNewCheckBox.addActionListener(new ActionListener() {
+		checkCollidable = new JCheckBox("Collidable");
+		checkCollidable.setSelected(true);
+		checkCollidable.setBounds(580, 9, 87, 23);
+		checkCollidable.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				collidable = chckbxNewCheckBox.isSelected();
+				MapPanel.selectedObj.setCollidable(checkCollidable.isSelected());
 			}
 		});
-		contentPane.add(chckbxNewCheckBox);
+		contentPane.add(checkCollidable);
+		
+		lblColor = new JLabel("Color: ");
+		lblColor.setVisible(false);
+		lblColor.setBounds(673, 13, 46, 14);
+		contentPane.add(lblColor);
+		
+		btnChange = new JButton("Change");
+		btnChange.setVisible(false);
+		btnChange.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Color color = JColorChooser.showDialog(contentPane, "Choose new color", ((RenderableMapObject)MapPanel.selectedObj).getColor());
+				((RenderableMapObject)MapPanel.selectedObj).setColor(color);
+				btnChange.setBackground(color);
+				repaint();
+			}
+		});
+		btnChange.setBounds(707, 9, 89, 23);
+		contentPane.add(btnChange);
 	}
 	
 	private void createToolbar(JPanel toolbar) {

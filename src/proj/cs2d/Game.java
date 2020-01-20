@@ -5,6 +5,7 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.HeadlessException;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;
@@ -181,7 +182,7 @@ public class Game {
 			
 			player.render(g2d);
 
-			map.render(g2d, camera);
+			map.render(g2d, new Rectangle(player.getX() - camera.getWidth() / 2, player.getY() - camera.getHeight() / 2, camera.getWidth(), camera.getHeight()));
 
 			camera.reverse(g2d);
 			

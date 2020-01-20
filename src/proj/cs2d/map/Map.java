@@ -80,9 +80,9 @@ public class Map implements Serializable {
 		return this.size;
 	}
 	
-	public void render(Graphics2D g2d, Camera camera) {
-		//HashSet<MapObject> objects = tree.getAllCollision(camera.getBounds());
-		List<MapObject> objects = tree.getAll();
+	public void render(Graphics2D g2d, Rectangle bounds) {
+		List<MapObject> objects = tree.getAllCollision(bounds);
+		//List<MapObject> objects = tree.getAll();
 		for(MapObject obj : objects) {
 			if(obj instanceof RenderableMapObject) {
 				((RenderableMapObject) obj).render(g2d);
@@ -141,6 +141,13 @@ public class Map implements Serializable {
 			if(obj.getBounds().contains(p)) return obj;
 		}
 		return null;
+	}
+	
+	public List<MapObject> getAll() {
+		List<MapObject> obj =  this.tree.getAll();
+		obj.add(spawnPoint0);
+		obj.add(spawnPoint1);
+		return obj;
 	}
 	
 	public MapObject collideView(Point p) {
