@@ -1,5 +1,6 @@
 package proj.cs2d.map.editor;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -8,6 +9,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Stroke;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
@@ -15,242 +17,275 @@ import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.JComponent;
 import javax.swing.JPanel;
-import javax.swing.JViewport;
-import javax.swing.SwingUtilities;
 
 import proj.cs2d.Camera;
+import proj.cs2d.Game;
 import proj.cs2d.map.HealthPickup;
 import proj.cs2d.map.MapObject;
 import proj.cs2d.map.RenderableMapObject;
 import proj.cs2d.map.WoodBox;
+import proj.cs2d.map.editor.command.AddCommand;
+import proj.cs2d.map.editor.command.MoveCommand;
+import proj.cs2d.map.editor.command.MultiRemoveCommand;
+import proj.cs2d.map.editor.command.RemoveCommand;
+import proj.cs2d.map.editor.command.ResizeCommand;
+import proj.cs2d.map.editor.command.SpawnpointCommand;
 
-public class MapPanel extends JPanel {	
+public class MapPanel extends JPanel {
+	private static final int resizePointRadius = 4;
+	
+	private CommandManager cmdManager;
 	private Camera camera;
-	private boolean mapDrag = false;
-	private boolean componentCreate = false;
-	private MapObject obj = null;
-	static MapObject selectedObj = null;
+	private Editor editor;
 	private int horizontal,vertical;
-	private int startWidth,startHeight;
 	private int startX, startY;
-	private MovementDirection movement = null;
-	private MovementDirection resizeDirection = null;
-	private int startComponentX, startComponentY;
+	private int pressedButton;
+	private Object data;
+	private Object data2;
+	private ResizeDirection resizing = null;
 	
-	int midPointX1, midPointY1, midPointX2, midPointY2, midPointX3, midPointY3, midPointX4, midPointY4;
-	
-	public MapPanel() {
+	public MapPanel(Editor editor) {
+		this.editor = editor;
+		this.cmdManager = new CommandManager();
 		this.camera = new Camera(0, 0, 1000, 1000);		
-		
-		JComponent component = this;
 		
 		addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
-				int X = e.getX() + horizontal;
-				int Y = e.getY() + vertical;
-				if(e.getButton() == MouseEvent.BUTTON2) {
-					mapDrag = true;
-					startX = X;
-					startY = Y;
-				} else if(e.getButton() == MouseEvent.BUTTON3) {
-					MapObject obj = Editor.map.collideMapEditor(new Point(X, Y));
-					if(obj != null) {
-						Editor.map.remove(obj);
-					}
-					repaint();
-				} else if(e.getButton() == MouseEvent.BUTTON1) {
-					componentCreate = true;
-					startX = X;
-					startY = Y;
-					if(Editor.chosen == 0) {
-						// Check for resize
-						for(Point[] points : getMidPoints()) {
-							if(checkIfPointInside(points[0], X, Y)) {
-								setCursor(Cursor.getPredefinedCursor(Cursor.N_RESIZE_CURSOR));
-								obj = Editor.map.collideMapEditor(new Point(startX, startY + 5));
-								resizeDirection = MovementDirection.N;
-							} else if(checkIfPointInside(points[1], X, Y)) {
-								setCursor(Cursor.getPredefinedCursor(Cursor.W_RESIZE_CURSOR));
-								obj = Editor.map.collideMapEditor(new Point(startX + 5, startY));
-								resizeDirection = MovementDirection.W;
-							} else if(checkIfPointInside(points[2], X, Y)) {
-								setCursor(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR));
-								obj = Editor.map.collideMapEditor(new Point(startX - 5, startY));
-								resizeDirection = MovementDirection.E;
-							} else if(checkIfPointInside(points[3], X, Y)) {
-								setCursor(Cursor.getPredefinedCursor(Cursor.S_RESIZE_CURSOR));
-								obj = Editor.map.collideMapEditor(new Point(startX, startY - 5));
-								resizeDirection = MovementDirection.S;
-							}
+				pressedButton = e.getButton();
+				startX = e.getX() - camera.getX();
+				startY = e.getY() - camera.getY();
+				switch (pressedButton) {
+					case MouseEvent.BUTTON1: {
+						switch (editor.getChosen()) {
+							case 0:
+								List<Point[]> pointsList = getResizePoints();
+								for(Point[] points : pointsList) {
+									if(checkIfPointInside(points[0], startX, startY)) {
+										setCursor(Cursor.getPredefinedCursor(Cursor.N_RESIZE_CURSOR));
+										data = editor.getEditedMap().collideMapEditor(new Point(startX, startY + 5));
+										resizing = ResizeDirection.N;
+									} else if(checkIfPointInside(points[1], startX, startY)) {
+										setCursor(Cursor.getPredefinedCursor(Cursor.W_RESIZE_CURSOR));
+										data = editor.getEditedMap().collideMapEditor(new Point(startX + 5, startY));
+										resizing = ResizeDirection.W;
+									} else if(checkIfPointInside(points[2], startX, startY)) {
+										setCursor(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR));
+										data = editor.getEditedMap().collideMapEditor(new Point(startX - 5, startY));
+										resizing = ResizeDirection.E;
+									} else if(checkIfPointInside(points[3], startX, startY)) {
+										setCursor(Cursor.getPredefinedCursor(Cursor.S_RESIZE_CURSOR));
+										data = editor.getEditedMap().collideMapEditor(new Point(startX, startY - 5));
+										resizing = ResizeDirection.S;
+									}
+								}
+									
+								if(resizing != null) return;
+									
+								data = editor.getEditedMap().collideMapEditor(new Point(startX, startY));
+								if(data != null) {
+									setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+								}
+							break;
 							
-							if(resizeDirection != null) {
-								startWidth = obj.getWidth();
-								startHeight = obj.getHeight();
-								return;
-							}
+							case 1:
+								data = new RenderableMapObject(startX, startY, 1, 1, editor.getChosenColor());
+								break;
+							case 2:
+								data = new WoodBox(startX, startY, 1, 1);
+								break;
+							case 3:
+								data = new HealthPickup(startX, startY, 1, 1, editor.getChosenHealthRestore(), editor.getChosenCooldown());
+								break;
+							case 4:
+								data = new MapObject(new Rectangle(startX, startY, 1, 1), false);
+								data2 = true;
+								break;
 						}
-						
-						obj = Editor.map.collideMapEditor(new Point(startX, startY));
-						if(obj != null) {
-							selectedObj = obj;
-							startComponentX = obj.getX();
-							startComponentY = obj.getY();
-							updateInfo();
-						}
-					} else if(Editor.chosen == 1 || Editor.chosen == 2 || Editor.chosen == 3 || Editor.chosen == 4) {
-						startX = round(startX);
-						startY = round(startY);
-						int size = Editor.align == 0 ? 1 : Editor.align;
-						switch (Editor.chosen) {
-						case 1:
-							obj = new RenderableMapObject(startX, startY, size, size, Editor.chosenColor);
-							obj.setCollidable(true);
-							break;
-						case 2:
-							obj = new WoodBox(startX, startY, size, size);
-							obj.setCollidable(true);
-							break;
-						case 3:
-							obj = new HealthPickup(startX, startY, size, size, Editor.restoreAmount, Editor.cooldown);
-							break;
-						}
-						if(Editor.chosen != 4) {
-							Editor.map.add(obj);
-						} else {
-							obj = new MapObject(new Rectangle(startX, startY, size, size));
-							Editor.map.setSpawnPoint(Editor.chosenTeam, obj);
-						}
-						repaint();
+						break;
+					}
+					case MouseEvent.BUTTON2: {
+						setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+						break;
 					}
 				}
 			}
 			
 			@Override
 			public void mouseReleased(MouseEvent e) {
-				setCursor(Cursor.getDefaultCursor());
-				if(e.getButton() == MouseEvent.BUTTON2) {
-					mapDrag = false;
-				} else if(e.getButton() == MouseEvent.BUTTON1) {
-					componentCreate = false;
-					resizeDirection = null;
-					movement = null;
-					obj = null;
-					repaint();
+				int X = e.getX() - camera.getX();
+				int Y = e.getY() - camera.getY();
+				switch (pressedButton) {
+					case MouseEvent.BUTTON3: {
+						if(X == startX && Y == startY) {
+							MapObject obj = editor.getEditedMap().collideMapEditor(new Point(startX, startY));
+							if(obj != null) {
+								cmdManager.execute(new RemoveCommand(editor.getEditedMap(), obj));
+							}
+						} else {
+							cmdManager.execute(new MultiRemoveCommand(editor.getEditedMap(), editor.getEditedMap().collideMapEditor((Rectangle)data)));
+						}
+						break;
+					}
+					case MouseEvent.BUTTON1: {
+						switch(editor.getChosen()) {
+							case 0:
+								if(resizing != null) {
+									MapObject obj = (MapObject) data;
+									Rectangle origSize = (Rectangle) data2;
+									ResizeCommand cmd = new ResizeCommand(obj.getX(), obj.getY(), obj.getWidth(), obj.getHeight(), obj);
+									obj.setBounds(origSize);
+									cmdManager.execute(cmd);
+								} else {
+									MapObject obj = (MapObject) data;
+									Rectangle origSize = (Rectangle) data2;
+									MoveCommand cmd = new MoveCommand(obj.getX(), obj.getY(), obj);
+									obj.setBounds(origSize);
+									cmdManager.execute(cmd);
+								}
+							break;
+							case 1:
+							case 2:
+							case 3:
+								cmdManager.execute(new AddCommand(editor.getEditedMap(), (MapObject)data));
+								break;
+							case 4:
+								cmdManager.execute(new SpawnpointCommand(editor.getEditedMap(), editor.getChosenTeam(), (MapObject)data));
+								break;
+						}
+						break;
+					}
 				}
+				pressedButton = 0;
+				data = null;
+				data2 = null;
+				resizing = null;
+				setCursor(Cursor.getDefaultCursor());
+				repaint();
 			}
 		});
 		
 		addMouseMotionListener(new MouseMotionAdapter() {
 			@Override
 			public void mouseDragged(MouseEvent e) {
-				int X = e.getX() + horizontal;
-				int Y = e.getY() + vertical;
-				
-				if(mapDrag) {
-                    JViewport viewPort = (JViewport) SwingUtilities.getAncestorOfClass(JViewport.class, component);
-                    
-                    Rectangle view = viewPort.getViewRect();
-                    view.x += startX - X;
-                    view.y += startY - Y;
-                    
-					scrollRectToVisible(view);
-				} else if(componentCreate) {
-					if(Editor.chosen == 0) {
-						if(resizeDirection != null) {
-							switch (resizeDirection) {
-							case N:
-								obj.setPosition(obj.getX(), round(Y));
-								obj.setSize(obj.getWidth(),round(startHeight + (startY - Y)));
-								break;
-							case E:
-								obj.setSize(round(startWidth + X - startX), obj.getHeight());
-								break;
-							case S:
-								obj.setSize(obj.getWidth(), round(startHeight + Y - startY));
-								break;
-							case W:
+				int X = e.getX() - camera.getX();
+				int Y = e.getY() - camera.getY();
+				switch (pressedButton) {
+					case 1: {
+						switch (editor.getChosen()) {
+						case 0:
+							if(resizing != null) {
+								MapObject obj = (MapObject) data;
+								if(data2 == null) {
+									data2 = new Rectangle(obj.getBounds());
+								}
+								switch(resizing) {
+									case N:
+										obj.setPosition(obj.getX(), round(Y));
+										obj.setSize(obj.getWidth(), round(((Rectangle)data2).height + (startY - Y)));
+										break;
+									case E:
+										obj.setSize((((Rectangle)data2).width + round(X - startX)), obj.getHeight());
+										break;
+									case S:
+										obj.setSize(obj.getWidth(), ((Rectangle)data2).height + round(Y - startY));
+										break;
+									case W:
+										obj.setPosition(round(X), obj.getY());
+										obj.setSize(round(((Rectangle)data2).width + (startX - X)), obj.getHeight());
+										break;
+								}
+							} else {
+								if(data != null) {
+									if(data2 == null) data2 = new Rectangle(((MapObject)data).getBounds());
+									Rectangle orig = (Rectangle)data2;
+									((MapObject)data).setPosition(orig.x + round(X - startX), orig.y + round(Y - startY));
+								}
+							}
+							break;
+						case 1:
+						case 2:
+						case 3:
+						case 4:
+							MapObject obj = (MapObject)data;
+							obj.setSize(round(X - startX), round(Y - startY));
+							if(X - startX < 0) {
 								obj.setPosition(round(X), obj.getY());
-								obj.setSize(round(startWidth + (startX - X)), obj.getHeight());
-								break;
+								obj.setSize(round(startX - X), obj.getHeight());
 							}
-							repaint();
-						} else if(obj != null) {
-							setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
-							int changeX = (X - startX);
-							int changeY = (Y - startY);
-							if(e.isShiftDown()) {
-								if(movement == null) {
-									if(changeX > changeY) movement = MovementDirection.HORIZONTAL;
-									else movement = MovementDirection.VERTICAL;
-								}
-								if(movement == MovementDirection.HORIZONTAL) {
-									changeY = 0;
-								} else if(movement == MovementDirection.VERTICAL) {
-									changeX = 0;
-								}
+							if(Y - startY < 0) {
+								obj.setPosition(obj.getX(), round(Y));
+								obj.setSize(obj.getWidth(), round(startY - Y));
 							}
-							obj.setPosition(round(startComponentX + changeX), round(startComponentY + changeY));
-							repaint();
+							break;
 						}
-					} else if(Editor.chosen == 1 || Editor.chosen == 2 || Editor.chosen == 3 || Editor.chosen == 4) {
-						obj.setSize(round(X - startX), e.isControlDown() ? round(X - startX) : round(Y - startY));
-						if(startX > X) {
-							obj.setPosition(round(X), obj.getY());
-							obj.setSize(round(startX - X), e.isControlDown() ? round(startX - X) : obj.getHeight());
+						break;
+					}
+					case 2: {
+						horizontal = startX - e.getX();
+						vertical = startY - e.getY();
+						break;
+					}
+					case 3: {
+						if(data == null) {
+							data = new Rectangle(startX, startY, 1, 1);
+						} else {
+							Rectangle rect = (Rectangle)data;
+							rect.setSize(X - startX, Y - startY);
+							if(X - startX < 0) {
+								rect.setLocation(X, rect.y);
+								rect.setSize(startX - X, rect.height);
+							}
+							if(Y - startY < 0) {
+								rect.setLocation(rect.x, Y);
+								rect.setSize(rect.width, startY - Y);
+							}
 						}
-						if(startY > Y) {
-							obj.setPosition(obj.getX(), round(Y));
-							obj.setSize(e.isControlDown() ? round(startY - Y) : obj.getWidth(), round(startY - Y));
-						}
-						repaint();
+						break;
 					}
 				}
+				repaint();
 			}
 		});
 	}
 	
-	private void updateInfo() {
-		if(selectedObj instanceof RenderableMapObject) {
-			RenderableMapObject obj = (RenderableMapObject) selectedObj;
-			if(obj.getColor() != null) {
-				Editor.lblColor.setVisible(true);
-				Editor.btnChange.setBackground(obj.getColor());
-				Editor.btnChange.setVisible(true);
-			} else {
-				Editor.lblColor.setVisible(false);
-				Editor.btnChange.setVisible(false);
-			}
-		} else {
-			Editor.lblColor.setVisible(false);
-			Editor.btnChange.setVisible(false);
-		}
-		Editor.checkCollidable.setSelected(obj.isCollidable());
+	public boolean canUndo() {
+		return this.cmdManager.canUndo();
+	}
+	
+	public boolean canRedo() {
+		return this.cmdManager.canRedo();
+	}
+	
+	public void undo() {
+		this.cmdManager.undo();
+	}
+	
+	public void redo() {
+		this.cmdManager.redo();
 	}
 	
 	private boolean checkIfPointInside(Point p, int x, int y) {
 		int dx = Math.abs(x - p.x);
 		int dy = Math.abs(y - p.y);
-		int r = 8;
 		
-		if(dx > r) return false;
-		if(dy > r) return false;
-		if(dx + dy <= r) return true;
-		return (dx * dx) + (dy * dy) <= (r * r);
+		if(dx > resizePointRadius * 2) return false;
+		if(dy > resizePointRadius * 2) return false;
+		if(dx + dy <= resizePointRadius * 2) return true;
+		return (dx * dx) + (dy * dy) <= ((resizePointRadius * 2) * (resizePointRadius * 2));
 	}
 
 	private int round(int n) {
-		if(Editor.align == 0) return n;
-		int remainder = n % Editor.align;
+		if(editor.getAlign() == 0) return n;
+		int remainder = n % editor.getAlign();
 		if(remainder == 0) return n;
-		return n + Editor.align - remainder;
+		return n < 0 ? n - (editor.getAlign() + remainder) : n + (editor.getAlign() - remainder);
 	}
 	
 	@Override
 	public Dimension getPreferredSize() {
-		return new Dimension(Editor.map.getSize(), Editor.map.getSize());
+		return new Dimension(editor.getEditedMap().getSize(), editor.getEditedMap().getSize());
 	}
 	
 	@Override
@@ -258,10 +293,10 @@ public class MapPanel extends JPanel {
 		return false;
 	}
 	
-	public List<Point[]> getMidPoints() {
+	public List<Point[]> getResizePoints() {
 		List<Point[]> mids = new ArrayList<Point[]>();
 		
-		for (MapObject obj : Editor.map.getAll()) {
+		for (MapObject obj : editor.getEditedMap().getAll()) {
 			Point[] points = new Point[4];
 			int x = obj.getX() - 4;
 			int y = obj.getY() - 4;
@@ -298,20 +333,43 @@ public class MapPanel extends JPanel {
 		camera.absoluteUpdate(-horizontal, -vertical);
 		AffineTransform trans = g2d.getTransform();
 		camera.apply(g2d);
-		Editor.map.renderMapEditor(g2d, camera);
-		if(Editor.chosen == 0) {
+		editor.getEditedMap().renderMapEditor(g2d, camera);
+		
+		if(editor.getChosen() == 0) {
+			List<Point[]> points = getResizePoints();
 			g2d.setColor(Color.black);
-			for(Point[] midPoints : getMidPoints()) {
-				g2d.fillOval(midPoints[0].x, midPoints[0].y, 8, 8);
-				g2d.fillOval(midPoints[1].x, midPoints[1].y, 8, 8);
-				g2d.fillOval(midPoints[2].x, midPoints[2].y, 8, 8);
-				g2d.fillOval(midPoints[3].x, midPoints[3].y, 8, 8);
+			for(Point[] point : points) {
+				g2d.fillOval(point[0].x, point[0].y, 2 * resizePointRadius, 2 * resizePointRadius);
+				g2d.fillOval(point[1].x, point[1].y, 2 * resizePointRadius, 2 * resizePointRadius);
+				g2d.fillOval(point[2].x, point[2].y, 2 * resizePointRadius, 2 * resizePointRadius);
+				g2d.fillOval(point[3].x, point[3].y, 2 * resizePointRadius, 2 * resizePointRadius);
 			}
 		}
-		if(obj != null) {
-			String s = String.format("%d %d %d %d", obj.getX(), obj.getY(), obj.getWidth(), obj.getHeight());
-			drawCenteredString(g2d, s, obj.getBounds());
-		}
+		
+		if(data != null) {
+    		if(pressedButton == MouseEvent.BUTTON3) {
+    			g2d.setColor(Color.black);
+    	        Stroke dashed = new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{3}, 0);
+    	        Stroke orig = g2d.getStroke();
+    	        g2d.setStroke(dashed);
+    			Rectangle rect = (Rectangle)data;
+    			g2d.drawRect(rect.x, rect.y, rect.width, rect.height);
+    			g2d.setStroke(orig);
+    		} else if(pressedButton == MouseEvent.BUTTON1) {
+				g2d.setColor(Color.black);
+    			if(data instanceof RenderableMapObject) {
+    				((RenderableMapObject)data).render(g2d);
+    			} else if(data2 instanceof Boolean) {
+    				MapObject obj = (MapObject) data;
+    				g2d.drawRect(obj.getX(), obj.getY(), obj.getWidth(), obj.getHeight());
+    				drawCenteredString(g2d, editor.getChosenTeam() == 0 ? "Team 0" : "Team 1", new Rectangle(obj.getX(), obj.getY(), obj.getWidth(), obj.getHeight() / 2));
+    			}
+    			MapObject obj = (MapObject) data;
+    			String s = String.format("%d %d %d %d", obj.getX(), obj.getY(), obj.getWidth(), obj.getHeight());
+    			drawCenteredString(g2d, s, obj.getBounds());
+    		}
+        }
+		
 		g2d.setTransform(trans);
 	};
 }

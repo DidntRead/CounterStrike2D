@@ -51,6 +51,10 @@ public class MapObject implements Serializable {
 		this.bounds.height = height;
 	}
 	
+	public void setBounds(Rectangle rect) {
+		this.bounds = rect;
+	}
+	
 	public void changePosition(int x, int y) {
 		this.bounds.x += x;
 		this.bounds.y += y;
