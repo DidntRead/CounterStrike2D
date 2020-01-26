@@ -2,6 +2,7 @@ package proj.cs2d.map.editor.command;
 
 import java.awt.Color;
 
+import proj.cs2d.map.HealthPickup;
 import proj.cs2d.map.MapObject;
 import proj.cs2d.map.RenderableMapObject;
 
@@ -28,6 +29,17 @@ public class ChangeCommand extends Command {
 			Color newColor = (Color) newValue;
 			newValue = ((RenderableMapObject)obj).getColor();
 			((RenderableMapObject)obj).setColor(newColor);
+			break;
+		case HealthRestore:
+			int healthRestore = (Integer) newValue;
+			newValue = ((HealthPickup)obj).getHealthRestoration();
+			((HealthPickup)obj).setHealthRestoration(healthRestore);
+			break;
+		case Cooldown:
+			int cooldown = (Integer) newValue;
+			newValue = ((HealthPickup)obj).getCooldown();
+			((HealthPickup)obj).setCooldown(cooldown);
+			break;
 		}
 		return this;
 	}
@@ -44,6 +56,17 @@ public class ChangeCommand extends Command {
 			Color newColor = (Color) newValue;
 			newValue = ((RenderableMapObject)obj).getColor();
 			((RenderableMapObject)obj).setColor(newColor);
+			break;
+		case HealthRestore:
+			int healthRestore = (Integer) newValue;
+			newValue = ((HealthPickup)obj).getHealthRestoration();
+			((HealthPickup)obj).setHealthRestoration(healthRestore);
+			break;
+		case Cooldown:
+			int cooldown = (Integer) newValue;
+			newValue = ((HealthPickup)obj).getCooldown();
+			((HealthPickup)obj).setCooldown(cooldown);
+			break;
 		}
 		return this;
 	}

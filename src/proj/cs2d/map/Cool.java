@@ -6,8 +6,8 @@ import java.awt.Rectangle;
 public class Cool extends Map {
 	public Cool() {
 		super(1200);
-		spawnPoint0 = new MapObject(new Rectangle(294, 0, 112, 112));
-		spawnPoint1 = new MapObject(new Rectangle(324, 880, 112, 112));
+		spawnPoint0 = new MapObject(new Rectangle(294, 0, 112, 112), false);
+		spawnPoint1 = new MapObject(new Rectangle(324, 880, 112, 112), false);
 		tree.insert(new RenderableMapObject(406, 112, 140, 58, Color.blue));
 		tree.insert(new RenderableMapObject(190, 112, 106, 58, Color.blue));
 		tree.insert(new RenderableMapObject(506, 170, 40, 176, Color.blue));

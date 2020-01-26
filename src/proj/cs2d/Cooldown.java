@@ -13,12 +13,20 @@ public class Cooldown {
 		reset();
 	}
 	
+	public int getCooldown() {
+		return this.cooldown;
+	}
+	
 	/**
 	 * Check if cooldown has passed
 	 * @return true if it has passed false otherwise
 	 */
 	public boolean hasPassed() {
 		return System.currentTimeMillis() > this.start + cooldown;
+	}
+	
+	public void changeCooldown(int v) {
+		this.cooldown = v;
 	}
 	
 	/**

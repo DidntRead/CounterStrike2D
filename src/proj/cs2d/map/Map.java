@@ -5,30 +5,31 @@ import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.io.InputStream;
 import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import proj.cs2d.Camera;
 import proj.cs2d.Player;
 import proj.cs2d.collision.Quadtree;
-import proj.cs2d.map.editor.MapPanel;
 
 public class Map implements Serializable {
-	private static final long serialVersionUID = -5884999978757486798L;
 	protected Quadtree tree;
+	protected Color background;
 	protected List<Updatable> updatable;
 	protected MapObject spawnPoint0, spawnPoint1;
 	protected int size;
 
 	public Map(int size) {
+		this(size, new Color(238, 238, 238));
+	}
+	
+	public Map(int size, Color background) {
 		this.tree = new Quadtree(size);
 		this.size = size;
 		this.updatable = new ArrayList<Updatable>();
+		this.background = background;
 	}
 	
 	public Map(int size, List<MapObject> map) {
@@ -80,8 +81,10 @@ public class Map implements Serializable {
 	}
 	
 	public void render(Graphics2D g2d, Rectangle bounds) {
+		g2d.setColor(background);
+		g2d.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+		
 		List<MapObject> objects = tree.getAllCollision(bounds);
-		//List<MapObject> objects = tree.getAll();
 		for(MapObject obj : objects) {
 			if(obj instanceof RenderableMapObject) {
 				((RenderableMapObject) obj).render(g2d);
@@ -98,7 +101,11 @@ public class Map implements Serializable {
 	}
 	
 	public void renderMapEditor(Graphics2D g2d, Camera camera) {
+		g2d.setColor(background);
+		g2d.fillRect(0, 0, getSize(), getSize());
+		
 		List<MapObject> objects = tree.getAll();
+		g2d.setColor(Color.black);
 		if(spawnPoint0 != null) {
 			g2d.drawRect(spawnPoint0.getX(), spawnPoint0.getY(), spawnPoint0.getWidth(), spawnPoint0.getHeight());
 			drawCenteredString(g2d, "Team 0", spawnPoint0.getX(), spawnPoint0.getY(), spawnPoint0.getWidth(), spawnPoint0.getHeight() / 2);
@@ -107,6 +114,7 @@ public class Map implements Serializable {
 			g2d.drawRect(spawnPoint1.getX(), spawnPoint1.getY(), spawnPoint1.getWidth(), spawnPoint1.getHeight());
 			drawCenteredString(g2d, "Team 1", spawnPoint1.getX(), spawnPoint1.getY(), spawnPoint1.getWidth(), spawnPoint1.getHeight() / 2);
 		}
+		
 		for(MapObject obj : objects) {
 			if(obj instanceof RenderableMapObject) {
 				((RenderableMapObject) obj).render(g2d);
@@ -179,5 +187,48 @@ public class Map implements Serializable {
 		obj.add(spawnPoint0);
 		obj.add(spawnPoint1);
 		return obj;
+	}
+
+	public String exportString() {
+		StringBuilder ret = new StringBuilder();
+		ret.append("import java.awt.Rectangle;\n");
+		ret.append("\n");
+		ret.append("public class ExportedMap extends Map {\n");
+		ret.append("	public ExportedMap() {\n");
+		ret.append("		super(" + getSize() + ");\n");
+		
+		ret.append(String.format("		setSpawnPoint(0, new MapObject(new Rectangle(%d, %d, %d, %d), false));\n", spawnPoint0.getX(), spawnPoint0.getY(), spawnPoint0.getWidth(), spawnPoint0.getHeight()));
+		ret.append(String.format("		setSpawnPoint(1, new MapObject(new Rectangle(%d, %d, %d, %d), false));\n", spawnPoint1.getX(), spawnPoint1.getY(), spawnPoint1.getWidth(), spawnPoint1.getHeight()));
+
+		boolean usesColor = false;
+		
+		for(MapObject obj : tree.getAll()) {
+			if(obj instanceof HealthPickup) {
+				HealthPickup health = (HealthPickup)obj;
+				ret.append(String.format("		add(new HealthPickup(%d, %d, %d, %d, %d, %d));\n", health.getX(), health.getY(), health.getWidth(), health.getHeight(), health.getHealthRestoration(), health.getCooldown()));
+			} else if(obj instanceof WoodBox) {
+				ret.append(String.format("		add(new WoodBox(%d, %d, %d, %d));\n", obj.getX(), obj.getY(), obj.getWidth(), obj.getHeight()));
+			} else if(obj instanceof RenderableMapObject) {
+				RenderableMapObject rmb = (RenderableMapObject)obj;
+				if(rmb.getColor() != null) {
+					Color color = rmb.getColor();
+					usesColor = true;
+					ret.append(String.format("		add(new RenderableMapObject(%d, %d, %d, %d, new Color(%d, %d, %d)));\n", rmb.getX(), rmb.getY(), rmb.getWidth(), rmb.getHeight(), color.getRed(), color.getGreen(), color.getBlue()));
+				} else {
+					ret.append(String.format("		//cannot export RenderableMapObject with image (X: %d, Y: %d, W: %d, H: %d, scale: %b)\n", rmb.getX(), rmb.getY(), rmb.getWidth(), rmb.getHeight(), rmb.getScale()));
+				}
+			} else {
+				ret.append(String.format("add(new MapObject(new Rectangle(%d, %d, %d, %d), %b));\n", obj.getX(), obj.getY(), obj.getWidth(), obj.getHeight(), obj.isCollidable()));
+			}
+		}
+		
+		if(usesColor) {
+			ret.insert(27, "import java.awt.Color;\n");
+		}
+		
+		ret.append("	}");
+		ret.append("}");
+		
+		return ret.toString();
 	}
 }

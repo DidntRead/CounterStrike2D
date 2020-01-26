@@ -34,6 +34,23 @@ public class HealthPickup extends Pickup implements Updatable {
 		return img;
 	}
 
+	public int getHealthRestoration() {
+		return healthRestoration;
+	}
+	
+	public int getCooldown() {
+		return cooldown.getCooldown();
+	}
+	
+	public void setHealthRestoration(int v) {
+		this.healthRestoration = v;
+	}
+	
+	public void setCooldown(int cooldown) {
+		this.cooldown.changeCooldown(cooldown);
+	}
+	
+	
 	@Override
 	public void pickedUp(Player player) {
 		if(cooldown.hasPassed()) {

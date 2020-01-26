@@ -34,22 +34,21 @@ public class Game {
 	private Timer deltaTimer;
 	private Player player;
 	private Camera camera;
+	private int team;
 	private Map map;
 	
-	public Game(Map map) {
+	public Game(Map map, int team) {
 		this.window = new Window();
 		this.deltaTimer = new Timer(); 
 		this.map = map;
-		
-		//TEST
-		this.map.add(new RemotePlayer(50, 50, 0));
+		this.team = team;
 	}
 		
 	public void start() {
 		window.setVisible(true);
 		window.createBufferStrategy(2);
 		bufferStrategy = window.getBufferStrategy();
-		player = new Player(map, 1);
+		player = new Player(map, team);
 		camera = new Camera(player, window.getWidth(), window.getHeight());
 		
 		// Crosshair
@@ -179,11 +178,11 @@ public class Game {
 				g2d.setColor(new Color(238, 238, 238));
 				g2d.fillRect(player.getX() - camera.getWidth() / 2, player.getY() - camera.getHeight() / 2, camera.getWidth(), camera.getHeight());
 			}
-			
-			player.render(g2d);
 
 			map.render(g2d, new Rectangle(player.getX() - camera.getWidth() / 2, player.getY() - camera.getHeight() / 2, camera.getWidth(), camera.getHeight()));
 
+			player.render(g2d);
+			
 			camera.reverse(g2d);
 			
 			// Health

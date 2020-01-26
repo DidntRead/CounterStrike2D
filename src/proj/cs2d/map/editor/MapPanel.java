@@ -41,9 +41,11 @@ public class MapPanel extends JPanel {
 	private int horizontal,vertical;
 	private int startX, startY;
 	private int pressedButton;
+	private List<MapObject> editSelected;
 	private Object data;
 	private Object data2;
-	private ResizeDirection resizing = null;
+	private Direction direction = null;
+	private Direction resizing = null;
 	
 	public MapPanel(Editor editor) {
 		this.editor = editor;
@@ -65,28 +67,38 @@ public class MapPanel extends JPanel {
 									if(checkIfPointInside(points[0], startX, startY)) {
 										setCursor(Cursor.getPredefinedCursor(Cursor.N_RESIZE_CURSOR));
 										data = editor.getEditedMap().collideMapEditor(new Point(startX, startY + 5));
-										resizing = ResizeDirection.N;
+										resizing = Direction.N;
 									} else if(checkIfPointInside(points[1], startX, startY)) {
 										setCursor(Cursor.getPredefinedCursor(Cursor.W_RESIZE_CURSOR));
 										data = editor.getEditedMap().collideMapEditor(new Point(startX + 5, startY));
-										resizing = ResizeDirection.W;
+										resizing = Direction.W;
 									} else if(checkIfPointInside(points[2], startX, startY)) {
 										setCursor(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR));
 										data = editor.getEditedMap().collideMapEditor(new Point(startX - 5, startY));
-										resizing = ResizeDirection.E;
+										resizing = Direction.E;
 									} else if(checkIfPointInside(points[3], startX, startY)) {
 										setCursor(Cursor.getPredefinedCursor(Cursor.S_RESIZE_CURSOR));
 										data = editor.getEditedMap().collideMapEditor(new Point(startX, startY - 5));
-										resizing = ResizeDirection.S;
+										resizing = Direction.S;
 									}
 								}
 									
 								if(resizing != null) return;
 									
 								data = editor.getEditedMap().collideMapEditor(new Point(startX, startY));
+								
 								if(data != null) {
-									setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+									if(e.isAltDown()) {
+										if(editSelected != null) editSelected.remove((MapObject)data);
+									} else {
+										if(editSelected == null || !e.isControlDown()) editSelected = new ArrayList<MapObject>();
+										editSelected.add((MapObject)data);
+									}
+								} else if(!e.isControlDown() && !e.isAltDown()) {
+									editSelected = null;
 								}
+
+								editor.displayEdit(editSelected);
 							break;
 							
 							case 1:
@@ -132,17 +144,32 @@ public class MapPanel extends JPanel {
 						switch(editor.getChosen()) {
 							case 0:
 								if(resizing != null) {
-									MapObject obj = (MapObject) data;
-									Rectangle origSize = (Rectangle) data2;
-									ResizeCommand cmd = new ResizeCommand(obj.getX(), obj.getY(), obj.getWidth(), obj.getHeight(), obj);
-									obj.setBounds(origSize);
-									cmdManager.execute(cmd);
+									if(data != null && data2 != null) {
+										MapObject obj = (MapObject) data;
+										Rectangle origSize = (Rectangle) data2;
+										ResizeCommand cmd = new ResizeCommand(obj.getX(), obj.getY(), obj.getWidth(), obj.getHeight(), obj);
+										obj.setBounds(origSize);
+										cmdManager.execute(cmd);
+									}
 								} else {
-									MapObject obj = (MapObject) data;
-									Rectangle origSize = (Rectangle) data2;
-									MoveCommand cmd = new MoveCommand(obj.getX(), obj.getY(), obj);
-									obj.setBounds(origSize);
-									cmdManager.execute(cmd);
+									if(data != null && data2 != null) {
+										MapObject obj = (MapObject) data;
+										Rectangle origSize = (Rectangle) data2;
+										MoveCommand cmd = new MoveCommand(obj.getX(), obj.getY(), obj);
+										obj.setBounds(origSize);
+										cmdManager.execute(cmd);
+									} else {
+										if(data2 != null) {
+											if(e.isControlDown()) {
+												editSelected.addAll(editor.getEditedMap().collideMapEditor((Rectangle)data2));
+											} else if(e.isAltDown()) {
+												editSelected.removeAll(editor.getEditedMap().collideMapEditor((Rectangle)data2));
+											} else {
+												editSelected = editor.getEditedMap().collideMapEditor((Rectangle)data2);
+											}
+											editor.displayEdit(editSelected);
+										}
+									}
 								}
 							break;
 							case 1:
@@ -160,6 +187,7 @@ public class MapPanel extends JPanel {
 				pressedButton = 0;
 				data = null;
 				data2 = null;
+				direction = null;
 				resizing = null;
 				setCursor(Cursor.getDefaultCursor());
 				repaint();
@@ -171,6 +199,20 @@ public class MapPanel extends JPanel {
 			public void mouseDragged(MouseEvent e) {
 				int X = e.getX() - camera.getX();
 				int Y = e.getY() - camera.getY();
+				
+				boolean shiftChangedNow = false;
+				if(e.isShiftDown() && direction == null) {
+					shiftChangedNow = true;
+					if(Y > X) {
+						direction = Direction.N;
+					} else {
+						direction = Direction.E;
+					}
+				} else if(direction != null && !e.isShiftDown()) {
+					shiftChangedNow = true;
+					direction = null;
+				}
+
 				switch (pressedButton) {
 					case 1: {
 						switch (editor.getChosen()) {
@@ -182,25 +224,75 @@ public class MapPanel extends JPanel {
 								}
 								switch(resizing) {
 									case N:
-										obj.setPosition(obj.getX(), round(Y));
-										obj.setSize(obj.getWidth(), round(((Rectangle)data2).height + (startY - Y)));
+										if(e.isControlDown()) {
+											obj.setPosition(round(((Rectangle)data2).x - (startY - Y)), round(Y));
+											obj.setSize((round(((Rectangle)data2).width + (startY - Y))), round(((Rectangle)data2).height + (startY - Y)));
+										} else {
+											obj.setPosition(obj.getX(), round(Y));
+											obj.setSize(obj.getWidth(), round(((Rectangle)data2).height + (startY - Y)));
+										}
 										break;
 									case E:
-										obj.setSize((((Rectangle)data2).width + round(X - startX)), obj.getHeight());
+										if(e.isControlDown()) {
+											obj.setSize((((Rectangle)data2).width + round(X - startX)), (((Rectangle)data2).height + round(X - startX)));
+										} else {
+											obj.setSize((((Rectangle)data2).width + round(X - startX)), obj.getHeight());
+										}
 										break;
 									case S:
-										obj.setSize(obj.getWidth(), ((Rectangle)data2).height + round(Y - startY));
+										if(e.isControlDown()) {
+											obj.setSize(((Rectangle)data2).width + round(Y - startY), ((Rectangle)data2).height + round(Y - startY));
+										} else {
+											obj.setSize(obj.getWidth(), ((Rectangle)data2).height + round(Y - startY));
+										}
 										break;
 									case W:
-										obj.setPosition(round(X), obj.getY());
-										obj.setSize(round(((Rectangle)data2).width + (startX - X)), obj.getHeight());
+										if(e.isControlDown()) {
+											obj.setPosition(round(X), round(((Rectangle)data2).y - (startX - X)));
+											obj.setSize(round(((Rectangle)data2).width + (startX - X)), round(((Rectangle)data2).height + (startX - X)));
+										} else {
+											obj.setPosition(round(X), obj.getY());
+											obj.setSize(round(((Rectangle)data2).width + (startX - X)), obj.getHeight());
+										}
 										break;
 								}
 							} else {
 								if(data != null) {
+									setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
 									if(data2 == null) data2 = new Rectangle(((MapObject)data).getBounds());
 									Rectangle orig = (Rectangle)data2;
-									((MapObject)data).setPosition(orig.x + round(X - startX), orig.y + round(Y - startY));
+									if(direction != null) {
+										if(direction == Direction.N) {
+											if(shiftChangedNow) orig.x = orig.x + round(X - startX);
+											((MapObject)data).setPosition(orig.x, orig.y + round(Y - startY));
+										} else {
+											if(shiftChangedNow) orig.y = orig.y + round(Y - startY);
+											((MapObject)data).setPosition(orig.x + round(X - startX), orig.y);
+										}
+									} else {
+										if(shiftChangedNow) {
+											orig.x = X - orig.width / 2;
+											orig.y = Y - orig.height / 2;
+											startX = X;
+											startY = Y;
+										}
+										((MapObject)data).setPosition(orig.x + round(X - startX), orig.y + round(Y - startY));
+									}
+								} else {
+									if(data2 == null) {
+										data2 = new Rectangle(startX, startY, 1, 1);
+									} else {
+										Rectangle rect = (Rectangle)data2;
+										rect.setSize(X - startX, Y - startY);
+										if(X - startX < 0) {
+											rect.setLocation(X, rect.y);
+											rect.setSize(startX - X, rect.height);
+										}
+										if(Y - startY < 0) {
+											rect.setLocation(rect.x, Y);
+											rect.setSize(rect.width, startY - Y);
+										}
+									}
 								}
 							}
 							break;
@@ -339,16 +431,26 @@ public class MapPanel extends JPanel {
 			List<Point[]> points = getResizePoints();
 			g2d.setColor(Color.black);
 			for(Point[] point : points) {
-				g2d.fillOval(point[0].x, point[0].y, 2 * resizePointRadius, 2 * resizePointRadius);
-				g2d.fillOval(point[1].x, point[1].y, 2 * resizePointRadius, 2 * resizePointRadius);
-				g2d.fillOval(point[2].x, point[2].y, 2 * resizePointRadius, 2 * resizePointRadius);
-				g2d.fillOval(point[3].x, point[3].y, 2 * resizePointRadius, 2 * resizePointRadius);
+				g2d.drawOval(point[0].x, point[0].y, 2 * resizePointRadius, 2 * resizePointRadius);
+				g2d.drawOval(point[1].x, point[1].y, 2 * resizePointRadius, 2 * resizePointRadius);
+				g2d.drawOval(point[2].x, point[2].y, 2 * resizePointRadius, 2 * resizePointRadius);
+				g2d.drawOval(point[3].x, point[3].y, 2 * resizePointRadius, 2 * resizePointRadius);
 			}
+		}
+		
+		if(editSelected != null) {
+			Stroke orig = g2d.getStroke();
+			g2d.setStroke(new BasicStroke(2));
+			g2d.setColor(Color.black);
+			for(MapObject obj : editSelected) {
+				g2d.drawRect(obj.getX(), obj.getY(), obj.getWidth(), obj.getHeight());
+			}
+			g2d.setStroke(orig);
 		}
 		
 		if(data != null) {
     		if(pressedButton == MouseEvent.BUTTON3) {
-    			g2d.setColor(Color.black);
+    			g2d.setColor(Color.red);
     	        Stroke dashed = new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{3}, 0);
     	        Stroke orig = g2d.getStroke();
     	        g2d.setStroke(dashed);
@@ -368,8 +470,22 @@ public class MapPanel extends JPanel {
     			String s = String.format("%d %d %d %d", obj.getX(), obj.getY(), obj.getWidth(), obj.getHeight());
     			drawCenteredString(g2d, s, obj.getBounds());
     		}
+        } else if(data2 != null) {
+        	if(pressedButton == MouseEvent.BUTTON1) {
+    			g2d.setColor(Color.black);
+    	        Stroke dashed = new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{3}, 0);
+    	        Stroke orig = g2d.getStroke();
+    	        g2d.setStroke(dashed);
+    			Rectangle rect = (Rectangle)data2;
+    			g2d.drawRect(rect.x, rect.y, rect.width, rect.height);
+    			g2d.setStroke(orig);
+        	}
         }
 		
 		g2d.setTransform(trans);
 	};
+	
+	public CommandManager getCommandManager() {
+		return this.cmdManager;
+	}
 }

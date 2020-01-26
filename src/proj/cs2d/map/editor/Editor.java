@@ -7,32 +7,37 @@ import java.awt.image.*;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.io.*;
+import java.util.List;
 
 import javax.swing.border.EmptyBorder;
 
 import proj.cs2d.Game;
-import proj.cs2d.map.Cool;
+import proj.cs2d.map.ColoredCool;
 import proj.cs2d.map.HealthPickup;
 import proj.cs2d.map.Map;
+import proj.cs2d.map.MapObject;
 import proj.cs2d.map.RenderableMapObject;
 import proj.cs2d.map.WoodBox;
+import proj.cs2d.map.editor.command.Change;
+import proj.cs2d.map.editor.command.ChangeCommand;
+import proj.cs2d.map.editor.command.MultiChangeCommand;
+
 import javax.swing.event.MenuListener;
 import javax.swing.event.MenuEvent;
 
 public class Editor extends JFrame {
 	private static Editor frame;
-	private static MapPanel panel;
+	private MapPanel panel;
+	private JPanel editPanel;
 	private int chosen = 0;
 	private Color chosenColor = Color.blue;
 	private int restoreAmount = 50;
 	private int cooldown = 5;
 	private int chosenTeam = 0;
 	private int align = 2;
-	static JButton btnChange;
-	static JLabel lblColor;
-	static JCheckBox checkCollidable;
+	private MapObject displayedEdit;
 	private JPanel contentPane;
-	private Map map = new Cool();
+	private Map map = new ColoredCool();
 	private JTextField textField;
 
 	public static void main(String[] args) {
@@ -115,6 +120,29 @@ public class Editor extends JFrame {
 		});
 		mnNewMenu.add(mntmSave);
 		
+		JMenuItem mntmExport = new JMenuItem("Export");
+		mntmExport.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JTextArea area = new JTextArea(30, 60);
+				area.setText(map.exportString());
+				area.setEditable(false);
+				JScrollPane pane = new JScrollPane(area);
+				JOptionPane.showMessageDialog(contentPane, pane, "Exported map", JOptionPane.PLAIN_MESSAGE);
+			}
+		});
+		mnNewMenu.add(mntmExport);
+		
+		JMenuItem mntmExit = new JMenuItem("Exit");
+		mntmExit.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				setVisible(false);
+				dispose();
+			}
+		});
+		mnNewMenu.add(mntmExit);
+		
 		JMenu mnNewMenu_1 = new JMenu("Edit");
 		menuBar.add(mnNewMenu_1);
 		
@@ -123,6 +151,9 @@ public class Editor extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				panel.undo();
+				if(displayedEdit != null) {
+					displayEdit(displayedEdit);
+				}
 				repaint();
 			}
 		});
@@ -133,6 +164,9 @@ public class Editor extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				panel.redo();
+				if(displayedEdit != null) {
+					displayEdit(displayedEdit);
+				}
 				repaint();
 			}
 		});
@@ -161,6 +195,9 @@ public class Editor extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				panel.undo();
+				if(displayedEdit != null) {
+					displayEdit(displayedEdit);
+				}
 				repaint();
 			}
 		});
@@ -168,6 +205,9 @@ public class Editor extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				panel.redo();
+				if(displayedEdit != null) {
+					displayEdit(displayedEdit);
+				}
 				repaint();
 			}
 		});
@@ -183,14 +223,14 @@ public class Editor extends JFrame {
 	        i.put(KeyStroke.getKeyStroke("control Y"), redoKey);
 	    }
 		
-		JButton btnNewButton = new JButton("Run");
-		btnNewButton.addActionListener(new ActionListener() {
+		JButton btnRun = new JButton("Run");
+		btnRun.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				int team = JOptionPane.showOptionDialog(contentPane, "Choose spawn team", "Run", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, new String[] {"Team 0", "Team 1"}, "Team 0");
 				Thread thread = new Thread(new Runnable() {	
 					@Override
 					public void run() {
-						Game game = new Game(map);
+						Game game = new Game(map, team);
 						game.start();
 						setVisible(true);
 					}
@@ -199,8 +239,10 @@ public class Editor extends JFrame {
 				setVisible(false);
 			}
 		});
-		btnNewButton.setBounds(10, 11, 89, 23);
-		contentPane.add(btnNewButton);
+		btnRun.setBounds(10, 11, 89, 23);
+		contentPane.add(btnRun);
+		
+		
 
 		textField = new JTextField();
 		textField.addKeyListener(new KeyAdapter() {
@@ -208,7 +250,9 @@ public class Editor extends JFrame {
 			public void keyTyped(KeyEvent e) {
 				String text = textField.getText();
 				if(Character.isDigit(e.getKeyChar())) text += e.getKeyChar();
-				align = Integer.valueOf(text);
+				if(text.length() > 0) {
+					align = Integer.valueOf(text);
+				}
 			}
 		});
 		textField.setText(String.valueOf(align));
@@ -258,6 +302,11 @@ public class Editor extends JFrame {
 		toolbar.setLayout(new GridLayout(6, 2, 0, 0));
 		
 		createToolbar(toolbar);
+		
+		editPanel = new JPanel();
+		editPanel.setBounds(256, 7, 728, 27);
+		contentPane.add(editPanel);
+		editPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 0));
 	}
 	
 	private void createToolbar(JPanel toolbar) {
@@ -276,8 +325,9 @@ public class Editor extends JFrame {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					chosen = 0;
+					repaint();
 				}
-			});
+			}); 
 			squares[0].add(move);
 		} catch (IOException e1) {
 			
@@ -293,16 +343,17 @@ public class Editor extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				chosen = 1;
+				repaint();
 			}
 		});
 		colorRect.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if(e.getClickCount() == 2) {
-					Color newColor = JColorChooser.showDialog(contentPane, "Choose rectangle color", chosenColor);
-					color.setColor(newColor);
+					chosenColor = JColorChooser.showDialog(contentPane, "Choose color", chosenColor);
+					if(chosenColor == null) chosenColor = Color.blue;
+					color.setColor(chosenColor);
 					color.fillRect(0, 0, 95, 103);
-					chosenColor = newColor;
 				}
 			}
 		});
@@ -315,6 +366,7 @@ public class Editor extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				chosen = 2;
+				repaint();
 			}
 		});
 		squares[2].add(woodBox);
@@ -326,6 +378,7 @@ public class Editor extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				chosen = 3;
+				repaint();
 			}
 		});
 		healthPickup.addMouseListener(new MouseAdapter() {
@@ -346,6 +399,7 @@ public class Editor extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				chosen = 4;
+				repaint();
 			}
 		});
 		spawnPoint.addMouseListener(new MouseAdapter() {
@@ -358,6 +412,130 @@ public class Editor extends JFrame {
 			}
 		});
 		squares[4].add(spawnPoint);
+	}
+	
+	public void displayEdit(MapObject obj) {
+		displayedEdit = obj;
+		editPanel.removeAll();
+		if(obj == null) {
+			repaint();
+			return;
+		}
+		JCheckBox collidable = new JCheckBox("Collidable");
+		collidable.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.getCommandManager().execute(new ChangeCommand(obj, Change.Collidable, collidable.isSelected()));
+			}
+		});
+		collidable.setSelected(obj.isCollidable());
+		editPanel.add(collidable);
+		
+		if(obj instanceof RenderableMapObject) {
+			RenderableMapObject renObj = (RenderableMapObject)obj;
+			if(renObj.getColor() != null) {
+				JButton color = new JButton("Color");
+				color.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						Color newColor = JColorChooser.showDialog(contentPane, "Choose new color", renObj.getColor());
+						if(newColor != null) {
+							color.setBackground(newColor);
+							panel.getCommandManager().execute(new ChangeCommand(obj, Change.Color, newColor));
+							repaint();
+						}
+					}
+				});
+				color.setBackground(renObj.getColor());
+				editPanel.add(color);
+			}
+		}
+		
+		if(obj instanceof HealthPickup) {
+			HealthPickup health = (HealthPickup) obj;
+
+			JLabel lblHealthRes = new JLabel("Health restoration: ");
+			JTextField healthRes = new JTextField(String.valueOf(health.getHealthRestoration()));
+			healthRes.addKeyListener(new KeyAdapter() {
+				@Override
+				public void keyTyped(KeyEvent e) {
+					String value = healthRes.getText() + (Character.isDigit(e.getKeyChar()) ? e.getKeyChar() : "");
+					if(value.length() > 0) {
+						panel.getCommandManager().execute(new ChangeCommand(obj, Change.HealthRestore, Integer.valueOf(value)));
+					}
+				}
+			});
+			editPanel.add(lblHealthRes);
+			editPanel.add(healthRes);
+			
+			JLabel lblCooldown = new JLabel("Cooldown: ");
+			JTextField cooldown = new JTextField(String.valueOf(health.getCooldown()));
+			cooldown.addKeyListener(new KeyAdapter() {
+				@Override
+				public void keyTyped(KeyEvent e) {
+					String value = cooldown.getText() + (Character.isDigit(e.getKeyChar()) ? e.getKeyChar() : "");
+					if(value.length() > 0) {
+						panel.getCommandManager().execute(new ChangeCommand(obj, Change.Cooldown, Integer.valueOf(value)));
+					}
+				}
+			});
+			editPanel.add(lblCooldown);
+			editPanel.add(cooldown);
+		}
+		
+		revalidate();
+		repaint();
+	}
+	
+	public void displayEdit(List<MapObject> objects) {		
+		editPanel.removeAll();
+		
+		if(objects == null || objects.size() == 0) return;
+		
+		if(objects.size() == 1) {
+			displayEdit(objects.get(0));
+			return;
+		}
+		
+		JCheckBox collidable = new JCheckBox("Collidable");
+		collidable.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.getCommandManager().execute(new MultiChangeCommand(objects, Change.Collidable, collidable.isSelected()));
+			}
+		});
+		collidable.setSelected(objects.get(0).isCollidable());
+		editPanel.add(collidable);
+		
+		boolean showColorChange = true;
+		for(MapObject obj : objects) {
+			if(obj instanceof RenderableMapObject) {
+				if (((RenderableMapObject)obj).getColor() == null) {
+					showColorChange = false;
+					break;
+				}
+			}
+		}
+		
+		if(showColorChange) {
+			JButton color = new JButton("Color");
+			color.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					Color newColor = JColorChooser.showDialog(contentPane, "Choose new color", ((RenderableMapObject) objects.get(0)).getColor());
+					if(newColor != null) {
+						color.setBackground(newColor);
+						panel.getCommandManager().execute(new MultiChangeCommand(objects, Change.Color, newColor));
+						repaint();
+					}
+				}
+			});
+			color.setBackground(((RenderableMapObject) objects.get(0)).getColor());
+			editPanel.add(color);
+		}
+		
+		revalidate();
+		repaint();
 	}
 	
 	public int getChosenTeam() {

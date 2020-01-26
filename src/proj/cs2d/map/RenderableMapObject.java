@@ -49,6 +49,10 @@ public class RenderableMapObject extends MapObject {
 		this.color = color;
 	}
 	
+	public boolean getScale() {
+		return this.scale;
+	}
+	
 	public void render(Graphics2D g2d) {
 		if(color != null) {
 			g2d.setColor(color);
