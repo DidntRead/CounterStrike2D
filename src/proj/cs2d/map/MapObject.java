@@ -1,7 +1,6 @@
 package proj.cs2d.map;
 
 import java.awt.Rectangle;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 public class MapObject implements Serializable {

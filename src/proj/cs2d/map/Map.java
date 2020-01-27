@@ -21,10 +21,6 @@ public class Map implements Serializable {
 	protected MapObject spawnPoint0, spawnPoint1;
 	protected int size;
 
-	public Map(int size) {
-		this(size, new Color(238, 238, 238));
-	}
-	
 	public Map(int size, Color background) {
 		this.tree = new Quadtree(size);
 		this.size = size;
@@ -32,6 +28,10 @@ public class Map implements Serializable {
 		this.background = background;
 	}
 	
+	public Map(int size) {
+		this(size, new Color(238, 238, 238));
+	}
+		
 	public Map(int size, List<MapObject> map) {
 		this(size);
 		for(MapObject obj : map) {
@@ -51,7 +51,7 @@ public class Map implements Serializable {
 	}
 	
 	public void remove(MapObject obj) {
-		if(obj instanceof Updatable) updatable.remove((Updatable) obj);
+		if(obj instanceof Updatable) updatable.remove((Updatable)obj);
 		this.tree.remove(obj);
 	}
 	

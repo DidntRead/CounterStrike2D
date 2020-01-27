@@ -20,7 +20,6 @@ import java.util.List;
 import javax.swing.JPanel;
 
 import proj.cs2d.Camera;
-import proj.cs2d.Game;
 import proj.cs2d.map.HealthPickup;
 import proj.cs2d.map.MapObject;
 import proj.cs2d.map.RenderableMapObject;
@@ -89,7 +88,7 @@ public class MapPanel extends JPanel {
 								
 								if(data != null) {
 									if(e.isAltDown()) {
-										if(editSelected != null) editSelected.remove((MapObject)data);
+										if(editSelected != null) editSelected.remove(data);
 									} else {
 										if(editSelected == null || !e.isControlDown()) editSelected = new ArrayList<MapObject>();
 										editSelected.add((MapObject)data);

@@ -42,6 +42,7 @@ public class Editor extends JFrame {
 
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
+			@Override
 			public void run() {
 				try {
 					frame = new Editor();
@@ -62,7 +63,7 @@ public class Editor extends JFrame {
 	
 	public Editor() {
 		setTitle("MapEditor");
-		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		setBounds(100, 100, 1200, 700);
 		
 		JMenuBar menuBar = new JMenuBar();
@@ -73,6 +74,7 @@ public class Editor extends JFrame {
 		
 		JMenuItem mntmNew = new JMenuItem("New");
 		mntmNew.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				String mapSize = JOptionPane.showInputDialog("Input map size: ");
 				if(mapSize != null) {
@@ -173,10 +175,13 @@ public class Editor extends JFrame {
 		mnNewMenu_1.add(mntmRedo);
 		
 		mnNewMenu_1.addMenuListener(new MenuListener() {
+			@Override
 			public void menuCanceled(MenuEvent e) {
 			}
+			@Override
 			public void menuDeselected(MenuEvent e) {
 			}
+			@Override
 			public void menuSelected(MenuEvent e) {
 				mntmUndo.setEnabled(panel.canUndo());
 				mntmRedo.setEnabled(panel.canRedo());
@@ -225,6 +230,7 @@ public class Editor extends JFrame {
 		
 		JButton btnRun = new JButton("Run");
 		btnRun.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				int team = JOptionPane.showOptionDialog(contentPane, "Choose spawn team", "Run", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, new String[] {"Team 0", "Team 1"}, "Team 0");
 				Thread thread = new Thread(new Runnable() {	

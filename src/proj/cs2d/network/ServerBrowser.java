@@ -9,6 +9,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.JButton;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.WindowConstants;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.ListSelectionModel;
@@ -25,6 +26,7 @@ public class ServerBrowser extends JFrame {
 
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
+			@Override
 			public void run() {
 				try {
 					ServerBrowser frame = new ServerBrowser();
@@ -37,7 +39,7 @@ public class ServerBrowser extends JFrame {
 	}
 
 	public ServerBrowser() {
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -46,6 +48,7 @@ public class ServerBrowser extends JFrame {
 		
 		JButton btnConnect = new JButton("Connect");
 		btnConnect.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				SocketAddress addr = (SocketAddress) table.getModel().getValueAt(table.getSelectedRow(), 2);
 				connect(addr);
@@ -56,6 +59,7 @@ public class ServerBrowser extends JFrame {
 		
 		JButton btnManual = new JButton("Manual");
 		btnManual.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				String address = JOptionPane.showInputDialog(contentPane, "Enter server address:port");
 				String[] data = address.split(":");
@@ -70,6 +74,7 @@ public class ServerBrowser extends JFrame {
 		
 		JButton btnRefresh = new JButton("Refresh");
 		btnRefresh.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				refresh();
 			}
@@ -93,24 +98,29 @@ public class ServerBrowser extends JFrame {
 		try {
 			List<ServerInfo> servers = ServerBroadcaster.getLocalServers();
 			table.setModel(new DefaultTableModel() {
+				@Override
 				public int getColumnCount() {
 					return 2;
 				};
 				
+				@Override
 				public int getRowCount() {
 					return servers.size();
 				};
 				
+				@Override
 				public boolean isCellEditable(int row, int column) {
 					return false;
 				};
 								
-			    public String getColumnName(int index) {
+			    @Override
+				public String getColumnName(int index) {
 			        if(index == 0) return "Name";
 			        else return "Players";
 			    }
 			    
-			    public Object getValueAt(int row, int column) {
+			    @Override
+				public Object getValueAt(int row, int column) {
 			    	ServerInfo info = servers.get(row);
 			    	if(column == 0) {
 			    		return info.name;

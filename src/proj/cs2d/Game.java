@@ -23,7 +23,6 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 import proj.cs2d.map.Map;
-import proj.cs2d.map.RemotePlayer;
 
 public class Game {
 	public static final int enableViewRectangle = 0;
