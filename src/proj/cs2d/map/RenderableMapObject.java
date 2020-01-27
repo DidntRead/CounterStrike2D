@@ -41,6 +41,11 @@ public class RenderableMapObject extends MapObject {
 		this.color = color;
 	}
 	
+	public RenderableMapObject(int x, int y, int width, int height, Color color, boolean collidable) {
+		super(new Rectangle(x, y, width, height), collidable);
+		this.color = color;
+	}
+	
 	public Color getColor() {
 		return this.color;
 	}

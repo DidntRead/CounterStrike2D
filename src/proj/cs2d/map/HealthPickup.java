@@ -39,7 +39,7 @@ public class HealthPickup extends Pickup implements Updatable {
 	}
 	
 	public int getCooldown() {
-		return cooldown.getCooldown();
+		return cooldown.getCooldown() / 1000;
 	}
 	
 	public void setHealthRestoration(int v) {
@@ -47,7 +47,7 @@ public class HealthPickup extends Pickup implements Updatable {
 	}
 	
 	public void setCooldown(int cooldown) {
-		this.cooldown.changeCooldown(cooldown);
+		this.cooldown.changeCooldown(cooldown * 1000);
 	}
 	
 	

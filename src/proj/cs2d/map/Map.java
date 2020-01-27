@@ -213,7 +213,11 @@ public class Map implements Serializable {
 				if(rmb.getColor() != null) {
 					Color color = rmb.getColor();
 					usesColor = true;
-					ret.append(String.format("		add(new RenderableMapObject(%d, %d, %d, %d, new Color(%d, %d, %d)));\n", rmb.getX(), rmb.getY(), rmb.getWidth(), rmb.getHeight(), color.getRed(), color.getGreen(), color.getBlue()));
+					if(!rmb.isCollidable()) {
+						ret.append(String.format("		add(new RenderableMapObject(%d, %d, %d, %d, new Color(%d, %d, %d), false));\n", rmb.getX(), rmb.getY(), rmb.getWidth(), rmb.getHeight(), color.getRed(), color.getGreen(), color.getBlue()));
+					} else {
+						ret.append(String.format("		add(new RenderableMapObject(%d, %d, %d, %d, new Color(%d, %d, %d)));\n", rmb.getX(), rmb.getY(), rmb.getWidth(), rmb.getHeight(), color.getRed(), color.getGreen(), color.getBlue()));
+					}
 				} else {
 					ret.append(String.format("		//cannot export RenderableMapObject with image (X: %d, Y: %d, W: %d, H: %d, scale: %b)\n", rmb.getX(), rmb.getY(), rmb.getWidth(), rmb.getHeight(), rmb.getScale()));
 				}
