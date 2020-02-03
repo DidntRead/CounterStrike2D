@@ -7,11 +7,21 @@ import proj.cs2d.Player;
 
 public class RemotePlayer extends RenderableMapObject {
 	private int team;
+	private int userID;
 	private int health = 100;
 	
-	public RemotePlayer(int x, int y, int team) {
+	public RemotePlayer(int x, int y, int team, int userID) {
 		super(x, y, 35, 29, Player.getImage(team));
 		this.team = team;
+		this.userID = userID;
+	}
+	
+	public void setHealth(int v) {
+		this.health = v;
+	}
+	
+	public int getUserID() {
+		return this.userID;
 	}
 	
 	@Override

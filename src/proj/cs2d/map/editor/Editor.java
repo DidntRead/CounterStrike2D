@@ -7,6 +7,7 @@ import java.awt.image.*;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.io.*;
+import java.net.Socket;
 import java.util.List;
 
 import javax.swing.border.EmptyBorder;
@@ -21,6 +22,7 @@ import proj.cs2d.map.WoodBox;
 import proj.cs2d.map.editor.command.Change;
 import proj.cs2d.map.editor.command.ChangeCommand;
 import proj.cs2d.map.editor.command.MultiChangeCommand;
+import proj.cs2d.server.Server;
 
 import javax.swing.event.MenuListener;
 import javax.swing.event.MenuEvent;
@@ -232,15 +234,21 @@ public class Editor extends JFrame {
 		btnRun.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				int team = JOptionPane.showOptionDialog(contentPane, "Choose spawn team", "Run", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, new String[] {"Team 0", "Team 1"}, "Team 0");
 				Thread thread = new Thread(new Runnable() {	
 					@Override
 					public void run() {
-						Game game = new Game(map, team);
-						game.start();
-						setVisible(true);
+						try {
+							Server local = new Server("Local", map, 1, 5000, false, true);
+							local.start();
+							Socket sock = new Socket("localhost", 5000);
+							Game game = new Game(sock, "Player");
+							game.start();
+							setVisible(true);
+						} catch(Exception e) {
+							e.printStackTrace();
+						}
 					}
-				});
+				}, "EditorGameThread");
 				thread.start();
 				setVisible(false);
 			}

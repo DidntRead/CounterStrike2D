@@ -12,10 +12,14 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.WindowConstants;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
+
+import proj.cs2d.Game;
+
 import javax.swing.ListSelectionModel;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.List;
 import java.awt.event.ActionEvent;
@@ -29,7 +33,8 @@ public class ServerBrowser extends JFrame {
 			@Override
 			public void run() {
 				try {
-					ServerBrowser frame = new ServerBrowser();
+					String username = JOptionPane.showInputDialog("Username: ", "Player");
+					ServerBrowser frame = new ServerBrowser(username);
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -38,7 +43,7 @@ public class ServerBrowser extends JFrame {
 		});
 	}
 
-	public ServerBrowser() {
+	public ServerBrowser(String username) {
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
 		contentPane = new JPanel();
@@ -51,7 +56,7 @@ public class ServerBrowser extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				SocketAddress addr = (SocketAddress) table.getModel().getValueAt(table.getSelectedRow(), 2);
-				connect(addr);
+				connect(addr, username);
 			}
 		});
 		btnConnect.setBounds(335, 227, 89, 23);
@@ -66,7 +71,7 @@ public class ServerBrowser extends JFrame {
 				SocketAddress addr = new InetSocketAddress(data[0], Integer.valueOf(data[1]));
 				setVisible(false);
 				dispose();
-				connect(addr);
+				connect(addr, username);
 			}
 		});
 		btnManual.setBounds(236, 227, 89, 23);
@@ -136,8 +141,23 @@ public class ServerBrowser extends JFrame {
 		}
 	}
 	
-	private void connect(SocketAddress addr) {
+	private void connect(SocketAddress addr, String username) {
 		System.out.println(addr.toString());
+		Socket sock = new Socket();
+		try {
+			sock.connect(addr);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		if(!sock.isConnected()) {
+			System.out.println("Failed to connect");
+			return;
+		}
+		try {
+			new Game(sock, username).start();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		return;
 	}
 }

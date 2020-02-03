@@ -7,12 +7,14 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.io.IOException;
+import java.io.OutputStream;
 
 import javax.imageio.ImageIO;
 
 import proj.cs2d.map.Map;
 import proj.cs2d.map.MapObject;
 import proj.cs2d.map.RemotePlayer;
+import proj.cs2d.server.packet.PacketFactory;
 
 public class Player {
 	private static Image[] images = null;
@@ -26,9 +28,10 @@ public class Player {
 	private double rotation = 0;
 	
 	// Damage & health
+	private boolean alive = false;
 	private int hitX = Integer.MIN_VALUE, hitY;
 	private int hitFrames = 0;
-	private int health = 100;
+	private int health = -1;
 	private int damage = 25;
 	private Cooldown shoot;
 	private float damageDropoff = 0.8f;
@@ -55,18 +58,20 @@ public class Player {
 		this.bounds = new Rectangle(p.x, p.y, img.getWidth(null), img.getHeight(null));
 	}
 	
-	public void render(Graphics2D g2d) {		
-		AffineTransform trans = g2d.getTransform();
-		g2d.rotate(rotation, bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2));
-		g2d.drawImage(img, bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, 0, 0, bounds.width, bounds.height, null);
-		g2d.setTransform(trans);
-		g2d.setColor(Color.ORANGE);
-		if(hitX != Integer.MIN_VALUE) {
-			hitFrames++;
-			g2d.drawLine(hitX, hitY, bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2));
-			if(hitFrames == 3) {
-				hitX = Integer.MIN_VALUE;
-				hitFrames = 0;
+	public void render(Graphics2D g2d) {
+		if(alive) {
+			AffineTransform trans = g2d.getTransform();
+			g2d.rotate(rotation, bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2));
+			g2d.drawImage(img, bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, 0, 0, bounds.width, bounds.height, null);
+			g2d.setTransform(trans);
+			g2d.setColor(Color.ORANGE);
+			if(hitX != Integer.MIN_VALUE) {
+				hitFrames++;
+				g2d.drawLine(hitX, hitY, bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2));
+				if(hitFrames == 3) {
+					hitX = Integer.MIN_VALUE;
+					hitFrames = 0;
+				}
 			}
 		}
 	}
@@ -79,6 +84,10 @@ public class Player {
 		return this.speed;
 	}
 	
+	public boolean isAlive() {
+		return this.alive;
+	}
+	
 	public int getTeam(int team) {
 		return this.team;
 	}
@@ -88,40 +97,56 @@ public class Player {
 	}
 	
 	public void aim(int x, int y, Camera camera) {
-		int playerX = (bounds.x + bounds.width / 2) + camera.getX();
-		int playerY = (bounds.y + bounds.height / 2) + camera.getY();
-		int topLeftX = playerX - (camera.getWidth() / 2);
-		int topLeftY = playerY - (camera.getHeight() / 2);
-		double angle1 = Math.atan2(topLeftY - playerY, topLeftX - playerX);
-		double angle2 = Math.atan2(y - playerY, x - playerX);
-		rotation = angle2 - angle1;
+		if(alive) {
+			int playerX = (bounds.x + bounds.width / 2) + camera.getX();
+			int playerY = (bounds.y + bounds.height / 2) + camera.getY();
+			int topLeftX = playerX - (camera.getWidth() / 2);
+			int topLeftY = playerY - (camera.getHeight() / 2);
+			double angle1 = Math.atan2(topLeftY - playerY, topLeftX - playerX);
+			double angle2 = Math.atan2(y - playerY, x - playerX);
+			rotation = angle2 - angle1;
+		}
 	}
 	
-	public void update(double delta, Camera camera, Map map) {
+	public void update(double delta, Camera camera, Map map, OutputStream out) {
 		int changeX = (int) (velocityX * delta);
 		int changeY = (int) (velocityY * delta);
 		
-		if(!map.collide(new Rectangle(bounds.x + changeX, bounds.y, bounds.width, bounds.height), this)) {
+		if(alive) {
+			if(!map.collide(new Rectangle(bounds.x + changeX, bounds.y, bounds.width, bounds.height), this)) {
+				bounds.x += changeX;
+				camera.update(-changeX, 0);
+			}
+		
+			// Y
+			if(!map.collide(new Rectangle(bounds.x, bounds.y + changeY, bounds.width, bounds.height), this)) {
+				bounds.y += changeY;
+				camera.update(0, -changeY);
+			}
+		
+			try {
+				out.write(PacketFactory.createPlayerUpdatePacket(bounds.x, bounds.y, health).constructNetworkPacket());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			if(Game.enableViewRectangle > 0) {
+				camera.updateViewPolygon(this, map);
+			}
+		
+			if(heldDown) {
+				shoot(map, out);
+			}
+		
+			if(reloadCooldown.hasPassed()) {
+				reloading = false;
+			}
+		} else {
 			bounds.x += changeX;
 			camera.update(-changeX, 0);
-		}
-		
-		// Y
-		if(!map.collide(new Rectangle(bounds.x, bounds.y + changeY, bounds.width, bounds.height), this)) {
+			
 			bounds.y += changeY;
 			camera.update(0, -changeY);
-		}
-		
-		if(Game.enableViewRectangle > 0) {
-			camera.updateViewPolygon(this, map);
-		}
-		
-		if(heldDown) {
-			shoot(map);
-		}
-		
-		if(reloadCooldown.hasPassed()) {
-			reloading = false;
 		}
 	}
 	
@@ -204,8 +229,8 @@ public class Player {
 		return images[team];
 	}
 
-	public void shoot(Map map) {
-		if(shoot.hasPassed() && !reloading && bullets > 0) {
+	public void shoot(Map map, OutputStream out) {
+		if(shoot.hasPassed() && !reloading && bullets > 0 && alive) {
 			shoot.reset();
 			bullets--;
 			Raycast raycast = new Raycast(bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2), rotation);
@@ -219,14 +244,37 @@ public class Player {
 						RemotePlayer other = (RemotePlayer)obj;
 						if(other.getTeam() != this.team) {
 							System.out.println((int) (this.damage * (Math.pow(damageDropoff, raycast.getLength() / dropoffDistance))));
-							((RemotePlayer)obj).damage((int) (this.damage * (Math.pow(damageDropoff, raycast.getLength() / dropoffDistance))));
+							int damage = (int) (this.damage * (Math.pow(damageDropoff, raycast.getLength() / dropoffDistance)));
+							((RemotePlayer)obj).damage(damage);
+							try {
+								out.write(PacketFactory.createDamagePacket(((RemotePlayer)obj).getUserID(), damage).constructNetworkPacket());
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
 						}
 					}
 					break;
 				}
 			}
+			try {
+				out.write(PacketFactory.createShootPacket(bounds.x, bounds.y, hitX, hitY).constructNetworkPacket());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		} else if(bullets == 0) {
 			reload();
 		}
+	}
+
+	public void setPosition(int x, int y, Camera camera) {
+		this.bounds.x = x;
+		this.bounds.y = y;
+		camera.absoluteUpdate(-(this.bounds.x - camera.getWidth() / 2), -(this.bounds.y - camera.getHeight() / 2));
+	}
+	
+	public void setAlive(boolean b) {
+		this.alive = b;
+		this.bullets = this.clipSize;
+		this.health = 100;
 	}
 }

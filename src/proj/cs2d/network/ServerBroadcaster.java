@@ -5,6 +5,7 @@ import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -16,11 +17,11 @@ public class ServerBroadcaster {
 	private MulticastSocket socket;
 	private Thread thread;
 	
-	public ServerBroadcaster(String name, int maxPlayerCount) throws IOException {
+	public ServerBroadcaster(String name, int maxPlayerCount, int port) throws IOException {
 		this.groupAddress = new InetSocketAddress("224.0.171.0", 5000);
 		this.socket = new MulticastSocket(groupAddress.getPort());
 		this.socket.joinGroup(groupAddress.getAddress());
-		this.socket.setSoTimeout(10000);
+		this.socket.setSoTimeout(1000);
 		this.thread = new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -30,19 +31,24 @@ public class ServerBroadcaster {
 					try {
 						socket.receive(packet);
 						if(Arrays.equals(packet.getData(), "SERVER".getBytes())) {
-							byte[] data = new byte[1 + name.length() + 1 + 1];
+							byte[] data = new byte[1 + name.length() + 1 + 1 + 4];
 							data[0] = (byte)name.length();
 							for(int i = 0; i < name.length(); i++) {
 								data[i + 1] = (byte) name.charAt(i);
 							}
-							data[data.length - 2] = (byte) playerCount;
-							data[data.length - 1] = (byte) maxPlayerCount;
+							data[data.length - 6] = (byte) playerCount;
+							data[data.length - 5] = (byte) maxPlayerCount;
+							ByteBuffer portBuf = ByteBuffer.allocate(4).putInt(0, port);
+							data[data.length - 4] = portBuf.get(0);
+							data[data.length - 3] = portBuf.get(1);
+							data[data.length - 2] = portBuf.get(2);
+							data[data.length - 1] = portBuf.get(3);
 							socket.send(new DatagramPacket(data, data.length, groupAddress));
 						}
 					} catch (IOException e) {}
 				}
 			}
-		}, "ServerBroadcaster");
+		}, "ServerBroadcasterThread");
 	}
 	
 	public void setPlayerCount(int v) {
@@ -55,6 +61,11 @@ public class ServerBroadcaster {
 	
 	public void stopBroadcast() {
 		this.thread.interrupt();
+		try {
+			this.thread.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public static List<ServerInfo> getLocalServers() throws IOException {
@@ -87,10 +98,13 @@ public class ServerBroadcaster {
 		if(nameLength == 83) {
 			return;
 		}
+		
+		System.out.println(Arrays.toString(data));
+		
 		info.name = new String(data, 1, nameLength + 1);
 		info.playerCount = data[nameLength + 1];
 		info.maxPlayerCount = data[nameLength + 2];
-		info.addr = receivePacket.getSocketAddress();
+		info.addr = new InetSocketAddress(receivePacket.getAddress(), ByteBuffer.wrap(data, nameLength + 3, 4).getInt());
 		list.add(info);
 	}
 }

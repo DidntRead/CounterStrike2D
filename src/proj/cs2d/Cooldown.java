@@ -1,6 +1,8 @@
 package proj.cs2d;
 
-public class Cooldown {
+import java.io.Serializable;
+
+public class Cooldown implements Serializable {
 	private long start;
 	private int cooldown;
 	

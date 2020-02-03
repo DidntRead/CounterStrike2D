@@ -7,17 +7,20 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import proj.cs2d.Camera;
 import proj.cs2d.Player;
 import proj.cs2d.collision.Quadtree;
+import proj.cs2d.server.packet.EnemyInfo;
 
 public class Map implements Serializable {
 	protected Quadtree tree;
 	protected Color background;
 	protected List<Updatable> updatable;
+	protected Hashtable<Integer, RemotePlayer> remotePlayers;
 	protected MapObject spawnPoint0, spawnPoint1;
 	protected int size;
 
@@ -25,6 +28,7 @@ public class Map implements Serializable {
 		this.tree = new Quadtree(size);
 		this.size = size;
 		this.updatable = new ArrayList<Updatable>();
+		this.remotePlayers = new Hashtable<>(16);
 		this.background = background;
 	}
 	
@@ -80,9 +84,29 @@ public class Map implements Serializable {
 		return this.size;
 	}
 	
+	public void updateRemotePlayers(EnemyInfo[] infos, int userID) {
+		if(infos == null) return;
+		for(int i = 0; i < infos.length; i++) {
+			EnemyInfo info = infos[i];
+			if(info.userID == userID) continue;
+			RemotePlayer player = remotePlayers.get(info.userID);
+			if(player == null) {
+				player = new RemotePlayer(info.x, info.y, info.team, info.userID);
+				remotePlayers.put(info.userID, player);
+			} else {
+				player.setPosition(info.x, info.y);
+				player.setHealth(info.health);
+			}
+		}
+	}
+	
 	public void render(Graphics2D g2d, Rectangle bounds) {
 		g2d.setColor(background);
 		g2d.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+		
+		for(RemotePlayer player : remotePlayers.values()) {
+			player.render(g2d);
+		}
 		
 		List<MapObject> objects = tree.getAllCollision(bounds);
 		for(MapObject obj : objects) {

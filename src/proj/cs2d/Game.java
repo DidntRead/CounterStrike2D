@@ -19,31 +19,133 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferStrategy;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
 
 import javax.imageio.ImageIO;
 
 import proj.cs2d.map.Map;
+import proj.cs2d.server.packet.ConnectionAcceptedPacket;
+import proj.cs2d.server.packet.DamagePacket;
+import proj.cs2d.server.packet.EnemyInfo;
+import proj.cs2d.server.packet.Packet;
+import proj.cs2d.server.packet.PacketFactory;
+import proj.cs2d.server.packet.PacketType;
+import proj.cs2d.server.packet.RespawnPacket;
+import proj.cs2d.server.packet.ServerUpdatePacket;
+import proj.cs2d.server.packet.ShootPacket;
 
 public class Game {
 	public static final int enableViewRectangle = 0;
 	public static final boolean enableFastRenderingHints = false;
 	
+	private boolean connected = false;
+	private Socket socket;
+	private InputStream inp;
+	private OutputStream out;
+	private Thread networkThread;
 	private Window window;
 	private BufferStrategy bufferStrategy;
 	private Timer deltaTimer;
 	private Player player;
 	private Camera camera;
 	private int team;
+	private EnemyInfo[] info;
+	private int id;
+	private int hitX = Integer.MIN_VALUE, hitY, hitX1, hitY1;
+	private int hitFrames = 0;
 	private Map map;
 	
-	public Game(Map map, int team) {
+	public Game(Socket socket, String username) throws IOException {
 		this.window = new Window();
 		this.deltaTimer = new Timer(); 
-		this.map = map;
-		this.team = team;
+		this.socket = socket;
+		this.inp = socket.getInputStream();
+		this.out = socket.getOutputStream();
+		this.networkThread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while(!networkThread.isInterrupted()) {
+					if(socket.isClosed()) {
+						networkThread.interrupt();
+						return;
+					}
+					try {
+					if(!connected) {
+						out.write(PacketFactory.createConnectionRequestPacket(username).constructNetworkPacket());
+						out.flush();
+						System.out.println("Send connection request packet");
+						while(inp.available() <= 0) {
+							Thread.sleep(50);
+						}
+						System.out.println("Received response");
+						int length = inp.available();
+						System.out.println(length);
+						byte[] data = inp.readNBytes(length);
+						Packet packet = PacketFactory.deserializePacket(data);
+						if(packet.getType() == PacketType.CONNECTION_DENIED) {
+							System.out.println("Connection denied");
+							networkThread.interrupt();
+						} else {
+							System.out.println("Connection accepted");
+							connected = true;
+							ConnectionAcceptedPacket conn = (ConnectionAcceptedPacket)packet;
+							map = conn.getMap();
+							id = conn.getUserID();
+							team = conn.getTeam();
+							System.out.println(map.getClass().getSimpleName() + " " + id + " " + team);
+						}
+					} else {
+						int available = inp.available();
+						if(available > 0) {
+							byte[] data = inp.readNBytes(available);
+							Packet packet = PacketFactory.deserializePacket(data);
+							switch (packet.getType()) {
+							case DAMAGE:
+								player.changeHealth(-((DamagePacket)packet).getAmount());
+								break;
+							case SHOOT:
+								ShootPacket pack = (ShootPacket)packet;
+								hitX = pack.getX();
+								hitY = pack.getY();
+								hitX1 = pack.getX1();
+								hitY1 = pack.getY1();
+								break;
+							case SERVER_UPDATE:
+								info = ((ServerUpdatePacket)packet).getInfo();
+								break;
+							case RESPAWN:
+								System.out.println("Received respawn packet");
+								if(player == null) break;
+								player.setAlive(true);
+								RespawnPacket respPacket = (RespawnPacket) packet;
+								player.setPosition(respPacket.getSpawnX(), respPacket.getSpawnY(), camera);
+								break;
+							default:
+								System.out.println("Received packet with wrong type from server: " + packet.getType());
+								break;
+							}
+						}
+					}
+					out.write(PacketFactory.createHeartbeatPacket().constructNetworkPacket());
+					} catch(Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}, "GameNetworkThread");
 	}
 		
 	public void start() {
+		networkThread.start();
+		System.out.println("Network thread started");
+		while(!connected) { try {
+			Thread.sleep(50);
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}} // Block until we connect
+		System.out.println("Connected");
 		window.setVisible(true);
 		window.createBufferStrategy(2);
 		bufferStrategy = window.getBufferStrategy();
@@ -76,7 +178,7 @@ public class Game {
 		this.window.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				player.shoot(map);
+				player.shoot(map, out);
 			}
 			@Override
 			public void mousePressed(MouseEvent e) {
@@ -91,6 +193,15 @@ public class Game {
 		this.window.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
+				try {
+					out.write(PacketFactory.createDisconnectPacket(id).constructNetworkPacket());
+					out.flush();
+					out.close();
+					inp.close();
+					socket.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
 				window.setVisible(false);
 				window.dispose();
 			}
@@ -156,7 +267,7 @@ public class Game {
 		hints.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
 		hints.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
 				
-		while(window.isShowing()) {
+		while(window.isShowing()) {			
 			Graphics2D g2d = (Graphics2D) bufferStrategy.getDrawGraphics();
 			
 			if(enableFastRenderingHints) g2d.addRenderingHints(hints); 
@@ -165,10 +276,12 @@ public class Game {
 			g2d.clearRect(0, 0, 600, 600);
 			
 			double delta = deltaTimer.elapsed();
-
-			player.update(delta, camera, map);
+			
+			player.update(delta, camera, map, out);
 			
 			map.update(delta);
+			
+			map.updateRemotePlayers(info, id);
 			
 			camera.apply(g2d);
 			
@@ -182,8 +295,17 @@ public class Game {
 
 			player.render(g2d);
 			
+			if(hitX != Integer.MIN_VALUE) {
+				g2d.drawLine(hitX, hitY, hitX1, hitY1);
+				hitFrames++;
+				if(hitFrames == 3) {
+					hitX = Integer.MIN_VALUE;
+				}
+			}
+			
 			camera.reverse(g2d);
 			
+			if(player.isAlive()) {
 			// Health
 			g2d.setColor(Color.RED);
 			g2d.setFont(g2d.getFont().deriveFont(Font.BOLD, 20f));
@@ -201,6 +323,7 @@ public class Game {
 			// Ammo
 			g2d.setColor(Color.orange);
 			g2d.drawString(player.getAmmoLeft() + "/" + player.getClipSize(), camera.getWidth() - 60, camera.getHeight() - 10);
+			}
 			
 			g2d.dispose();
 			bufferStrategy.show();
@@ -211,5 +334,6 @@ public class Game {
 				e1.printStackTrace();
 			}
 		}
+		networkThread.interrupt();
 	}
 }
