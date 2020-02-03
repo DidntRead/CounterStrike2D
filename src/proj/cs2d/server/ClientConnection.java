@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import proj.cs2d.Cooldown;
 import proj.cs2d.map.Map;
@@ -17,9 +20,9 @@ import proj.cs2d.server.packet.ShootPacket;
 public class ClientConnection {
 	private ClientConnection connection;
 	private Cooldown timeoutCooldown;
-	private Thread thread;
 	private InputStream inp;
 	private OutputStream out;
+	private ScheduledExecutorService executor;
 
 	private String username;
 	private int team;
@@ -33,16 +36,16 @@ public class ClientConnection {
 		out = client.getOutputStream();
 		timeoutCooldown = new Cooldown(timeout);
 		connection = this;
-		this.thread = new Thread(new Runnable() {
+		executor = Executors.newSingleThreadScheduledExecutor();
+		Runnable task = new Runnable() {
 			@Override
 			public void run() {
 				try {
-					while(!thread.isInterrupted()) {
 						if(timeoutCooldown.hasPassed()) {
 							// Client timeout
 							System.out.println("Client timeout { ID: " + id + "}");
 							server.removeClient(id);
-							thread.interrupt();
+							executor.shutdownNow();
 						}
 						int available = inp.available();
 						if(available > 0) {
@@ -65,8 +68,8 @@ public class ClientConnection {
 							case DISCONNECT:
 								server.removeClient(id);
 								System.out.println("Disconnect: { ID: "+ id +"}");
-								thread.interrupt();
-								break;
+								executor.shutdownNow();
+								return;
 							case HEARTBEAT:
 								timeoutCooldown.reset();
 								break;
@@ -91,16 +94,15 @@ public class ClientConnection {
 							}
 							out.flush();
 						}
-					}
 				} catch(IOException e) {
 					e.printStackTrace();
 				}
-			}}, "ClientThread");
-		thread.start();
+			}};
+			executor.scheduleAtFixedRate(task, 0, 100, TimeUnit.MILLISECONDS);
 	}
 	
 	protected void stop() {
-		thread.interrupt();
+		executor.shutdownNow();
 	}
 	
 	protected int getUserID() {

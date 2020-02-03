@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.imageio.ImageIO;
 
@@ -44,7 +47,8 @@ public class Game {
 	private Socket socket;
 	private InputStream inp;
 	private OutputStream out;
-	private Thread networkThread;
+	private ScheduledExecutorService networkExecutor;
+	private Runnable networkTask;
 	private Window window;
 	private BufferStrategy bufferStrategy;
 	private Timer deltaTimer;
@@ -63,12 +67,12 @@ public class Game {
 		this.socket = socket;
 		this.inp = socket.getInputStream();
 		this.out = socket.getOutputStream();
-		this.networkThread = new Thread(new Runnable() {
+		this.networkExecutor = Executors.newSingleThreadScheduledExecutor();
+		this.networkTask = new Runnable() {
 			@Override
 			public void run() {
-				while(!networkThread.isInterrupted()) {
 					if(socket.isClosed()) {
-						networkThread.interrupt();
+						networkExecutor.shutdownNow();
 						return;
 					}
 					try {
@@ -86,7 +90,7 @@ public class Game {
 						Packet packet = PacketFactory.deserializePacket(data);
 						if(packet.getType() == PacketType.CONNECTION_DENIED) {
 							System.out.println("Connection denied");
-							networkThread.interrupt();
+							networkExecutor.shutdownNow();
 						} else {
 							System.out.println("Connection accepted");
 							connected = true;
@@ -132,13 +136,12 @@ public class Game {
 					} catch(Exception e) {
 						e.printStackTrace();
 					}
-				}
 			}
-		}, "GameNetworkThread");
+		};
 	}
 		
 	public void start() {
-		networkThread.start();
+		networkExecutor.scheduleAtFixedRate(networkTask, 0, 100, TimeUnit.MILLISECONDS);
 		System.out.println("Network thread started");
 		while(!connected) { try {
 			Thread.sleep(50);
@@ -273,7 +276,7 @@ public class Game {
 			if(enableFastRenderingHints) g2d.addRenderingHints(hints); 
 			
 			if(enableViewRectangle == 1) g2d.setBackground(Color.black);
-			g2d.clearRect(0, 0, 600, 600);
+			//g2d.clearRect(0, 0, 600, 600);
 			
 			double delta = deltaTimer.elapsed();
 			
@@ -305,24 +308,25 @@ public class Game {
 			
 			camera.reverse(g2d);
 			
+			// DRAW GUI
 			if(player.isAlive()) {
-			// Health
-			g2d.setColor(Color.RED);
-			g2d.setFont(g2d.getFont().deriveFont(Font.BOLD, 20f));
-			g2d.drawString(String.valueOf(player.getHealth()), 10, camera.getHeight() - 10);
+				// Health
+				g2d.setColor(Color.RED);
+				g2d.setFont(g2d.getFont().deriveFont(Font.BOLD, 20f));
+				g2d.drawString(String.valueOf(player.getHealth()), 10, camera.getHeight() - 10);
 			
-			// Reload indicator
-			if(player.isReloading()) {
-				g2d.setColor(Color.black);
-				g2d.fillRect(camera.getWidth() / 2 - 50, camera.getHeight() / 2 + 30, 140, 20);
-				g2d.setColor(Color.green);
-				g2d.fillRect(camera.getWidth() / 2 - 50, camera.getHeight() / 2 + 30, (int) (140 * player.reloadRemaining()), 20);
-				g2d.drawString("RELOADING...", camera.getWidth() / 2 - 50, camera.getHeight() / 2 + 20);
-			}
+				// Reload indicator
+				if(player.isReloading()) {
+					g2d.setColor(Color.black);
+					g2d.fillRect(camera.getWidth() / 2 - 50, camera.getHeight() / 2 + 30, 140, 20);
+					g2d.setColor(Color.green);
+					g2d.fillRect(camera.getWidth() / 2 - 50, camera.getHeight() / 2 + 30, (int) (140 * player.reloadRemaining()), 20);
+					g2d.drawString("RELOADING...", camera.getWidth() / 2 - 50, camera.getHeight() / 2 + 20);
+				}
 			
-			// Ammo
-			g2d.setColor(Color.orange);
-			g2d.drawString(player.getAmmoLeft() + "/" + player.getClipSize(), camera.getWidth() - 60, camera.getHeight() - 10);
+				// Ammo
+				g2d.setColor(Color.orange);
+				g2d.drawString(player.getAmmoLeft() + "/" + player.getClipSize(), camera.getWidth() - 60, camera.getHeight() - 10);
 			}
 			
 			g2d.dispose();
@@ -334,6 +338,6 @@ public class Game {
 				e1.printStackTrace();
 			}
 		}
-		networkThread.interrupt();
+		networkExecutor.shutdownNow();
 	}
 }

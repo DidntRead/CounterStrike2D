@@ -9,6 +9,9 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import proj.cs2d.map.Map;
 import proj.cs2d.network.ServerBroadcaster;
@@ -18,8 +21,10 @@ import proj.cs2d.server.packet.ServerUpdatePacket;
 
 public class Server {
 	private ServerSocket socket;
-	private Thread consoleThread;
+	private ScheduledExecutorService consoleExecutor;
+	private Runnable consoleTask;
 	private ServerBroadcaster broadcaster;
+	private BufferedReader reader;
 	private Hashtable<Integer, ClientConnection> clients;
 	private List<Integer> freeIDs;
 	private Map map;
@@ -37,6 +42,7 @@ public class Server {
 		this.maxPlayerCount = maxPlayerCount;
 		this.advertiseLan = advertiseLan;
 		this.localServer = local;
+		this.reader = new BufferedReader(new InputStreamReader(System.in));
 		
 		this.clients = new Hashtable<Integer, ClientConnection>(maxPlayerCount);
 		this.freeIDs = new ArrayList<Integer>(maxPlayerCount);
@@ -48,13 +54,11 @@ public class Server {
 		socket = new ServerSocket(port);
 		socket.setSoTimeout(2000);
 		
-		// Console thread
-		consoleThread = new Thread(new Runnable() {
+		this.consoleExecutor = Executors.newSingleThreadScheduledExecutor();
+		this.consoleTask = new Runnable() {
 			@Override
 			public void run() {
 				try {
-					BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-					while(run) {
 						if(reader.ready()) {
 							String inp[] = reader.readLine().split(" ");
 							String cmd = inp[0];
@@ -95,12 +99,11 @@ public class Server {
 								System.err.println("Unknown command");
 							}
 						}
-					}
-					reader.close();
 				} catch(IOException e) {
 					e.printStackTrace();
 				}
-			}}, "consoleThread");
+			}
+		};
 		
 		// ServerBroadcaster
 		if(advertiseLan) {
@@ -110,7 +113,7 @@ public class Server {
 	
 	public void start() {
 		// Start console thread
-		consoleThread.start();
+		consoleExecutor.scheduleAtFixedRate(consoleTask, 0, 250, TimeUnit.MILLISECONDS);
 		// Start lan advertisement if enabled
 		if(advertiseLan) broadcaster.startBroadcast();
 		
@@ -119,8 +122,6 @@ public class Server {
 		// Main loop
 		while(run) {
 			try {
-				System.out.println("Checking for respawn");
-				
 				if(shouldRespawn()) {
 					System.out.println("Respawning");
 					for(ClientConnection client : clients.values()) {
@@ -141,8 +142,12 @@ public class Server {
 			broadcaster.stopBroadcast();
 		}
 		
+		for(ClientConnection client : clients.values()) {
+			client.stop();
+		}
+		
 		try {
-			consoleThread.join();
+			consoleExecutor.awaitTermination(500, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -152,7 +157,7 @@ public class Server {
 	
 	public void stop() {
 		run = false;
-		consoleThread.interrupt();
+		consoleExecutor.shutdownNow();
 	}
 	
 	private boolean shouldRespawn() {
