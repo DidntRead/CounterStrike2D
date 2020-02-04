@@ -338,6 +338,12 @@ public class Game {
 				e1.printStackTrace();
 			}
 		}
+		try {
+			out.write(PacketFactory.createDisconnectPacket(id).constructNetworkPacket());
+			out.flush();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
 		networkExecutor.shutdownNow();
 	}
 }

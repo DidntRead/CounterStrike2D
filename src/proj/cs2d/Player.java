@@ -123,12 +123,6 @@ public class Player {
 				bounds.y += changeY;
 				camera.update(0, -changeY);
 			}
-		
-			try {
-				out.write(PacketFactory.createPlayerUpdatePacket(bounds.x, bounds.y, health).constructNetworkPacket());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
 			
 			if(Game.enableViewRectangle > 0) {
 				camera.updateViewPolygon(this, map);
@@ -147,6 +141,11 @@ public class Player {
 			
 			bounds.y += changeY;
 			camera.update(0, -changeY);
+		}
+		try {
+			out.write(PacketFactory.createPlayerUpdatePacket(bounds.x, bounds.y, health).constructNetworkPacket());
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -182,6 +181,7 @@ public class Player {
 	 */
 	public void changeHealth(int v) {
 		this.health += v;
+		if(health <= 0) alive = false;
 	}
 	
 	public void sneak(boolean v) {
@@ -236,7 +236,7 @@ public class Player {
 			Raycast raycast = new Raycast(bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2), rotation);
 			while(raycast.getLength() < 900) {
 				Point p = raycast.progress();
-				MapObject obj = map.collide(p);
+				MapObject obj = map.collideShot(p);
 				hitX = p.x;
 				hitY = p.y;
 				if(obj != null) {

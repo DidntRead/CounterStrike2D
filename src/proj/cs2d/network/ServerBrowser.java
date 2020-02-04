@@ -153,11 +153,16 @@ public class ServerBrowser extends JFrame {
 			System.out.println("Failed to connect");
 			return;
 		}
-		try {
-			new Game(sock, username).start();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					new Game(sock, username).start();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();
 		return;
 	}
 }

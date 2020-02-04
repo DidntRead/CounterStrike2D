@@ -161,8 +161,8 @@ public class Server {
 	}
 	
 	private boolean shouldRespawn() {
+		if(clients.size() <= 1) return false;
 		if(localServer) {
-			if(clients.size() == 0) return false;
 			if(clients.get(0).getHealth() <= 0) return true;
 			else return false;
 		}
@@ -246,6 +246,8 @@ public class Server {
 	}
 
 	protected void addClient(int id, ClientConnection connection) {
+		playerCount++;
+		if(advertiseLan) broadcaster.setPlayerCount(playerCount);
 		clients.put(id, connection);
 	}
 }

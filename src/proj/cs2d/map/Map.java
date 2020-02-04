@@ -177,6 +177,20 @@ public class Map implements Serializable {
 		return null;
 	}
 	
+	public MapObject collideShot(Point p) {
+		for(RemotePlayer player : remotePlayers.values()) {
+			if(player.getBounds().contains(p)) return player;
+		}
+		
+		List<MapObject> objects = tree.getAllCollision(p);
+		for(MapObject obj : objects) {
+			if(obj.isCollidable()) {
+				if(obj.getBounds().contains(p)) return obj;
+			}
+		}
+		return null;
+	}
+	
 	public MapObject collideMapEditor(Point p) {
 		List<MapObject> objects = tree.getAllCollision(p);
 		if(spawnPoint0 != null) objects.add(spawnPoint0);

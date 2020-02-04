@@ -239,10 +239,17 @@ public class Editor extends JFrame {
 					public void run() {
 						try {
 							Server local = new Server("Local", map, 1, 5000, false, true);
-							local.start();
+							Thread serverThread = new Thread(new Runnable() {
+								@Override
+								public void run() {
+									local.start();
+								}
+							}, "LocalServerThread");
+							serverThread.start();
 							Socket sock = new Socket("localhost", 5000);
 							Game game = new Game(sock, "Player");
 							game.start();
+							local.stop();
 							setVisible(true);
 						} catch(Exception e) {
 							e.printStackTrace();
