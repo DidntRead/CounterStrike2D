@@ -161,11 +161,11 @@ public class Server {
 	}
 	
 	private boolean shouldRespawn() {
-		if(clients.size() <= 1) return false;
-		if(localServer) {
+		if(localServer && clients.size() == 1) {
 			if(clients.get(0).getHealth() <= 0) return true;
 			else return false;
 		}
+		if(clients.size() <= 1) return false;
 		
 		boolean team0Dead = true;
 		boolean team1Dead = true;
